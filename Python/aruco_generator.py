@@ -12,7 +12,7 @@ ap.add_argument("-s", "--size", type=int, default=50, help="the size in mm of th
 ap.add_argument("-m", "--margin", type=int, default=5, help="the size in mm of the margins between the ArUco tags")
 ap.add_argument("-x", "--x", type=int, default=3, help="number of ArUco tags in the X direction")
 ap.add_argument("-y", "--y", type=int, default=4, help="number of ArUco tags in the Y direction")
-ap.add_argument("--write-id", type=bool, default=True, help="write the id of the tag or not")
+ap.add_argument("-w", "--write_id", type=bool, default=False, help="write the id of the tag or not")
 args = vars(ap.parse_args())
 
 ARUCO_DICT = {
@@ -43,7 +43,7 @@ if ARUCO_DICT.get(args["type"], None) is None:
 	print("[INFO] ArUCo tag of '{}' is not supported".format(args["type"]))
 	sys.exit(0)
 
-arucoDict = cv2.aruco.Dictionary_get(ARUCO_DICT[args["type"]])
+arucoDict = cv2.aruco.getPredefinedDictionary(ARUCO_DICT[args["type"]])
 tag_type = args["type"]
 
 A4_width = 210
@@ -55,8 +55,7 @@ size = args["size"]
 margin = args["margin"]
 text_size = 8
 
-write_id = args["write_id"]
-
+write_id = False
 
 if not(write_id):
 	text_size = 0
@@ -120,7 +119,7 @@ for i in range(0, y):
 		i_val = half_rest_y_m + i*size_m + i*margin_m + 2*i*text_size_m
 		j_val = half_rest_x_m + j*size_m + j*margin_m
 		tag = np.zeros((size_m, size_m, 1), dtype="uint8")
-		cv2.aruco.drawMarker(arucoDict, tag_id, size_m, tag, 1)
+		cv2.aruco.generateImageMarker(arucoDict, tag_id, size_m, tag, 1)
 		if write_id:
 			if "APRILTAG" in tag_type:
 				text_string = f"April id: {tag_id}"
