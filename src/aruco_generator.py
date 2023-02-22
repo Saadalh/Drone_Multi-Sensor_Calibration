@@ -14,7 +14,6 @@ ap.add_argument("-x", "--x", type=int, default=3, help="number of ArUco tags in 
 ap.add_argument("-y", "--y", type=int, default=4, help="number of ArUco tags in the Y direction")
 ap.add_argument("-w", "--write_id", type=bool, default=False, help="write the id of the tag or not")
 args = vars(ap.parse_args())
-print("aruco")
 
 ARUCO_DICT = {
 	"DICT_4X4_50": cv2.aruco.DICT_4X4_50,

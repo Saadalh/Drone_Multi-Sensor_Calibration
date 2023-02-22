@@ -23,7 +23,7 @@ img_points = []  # 2D points in image plane
 gridboard = aruco.GridBoard((gridboard_rows, gridboard_cols), marker_size, 1, dictionary)
 
 # Capture a set of calibration images of the calibration target from different viewpoints
-calibration_images = glob.glob('/home/ubuntu/Python/Multi-Sensor_Calibrartion/aruco_data/*.jpg')
+calibration_images = glob.glob("/home/ubuntu/Python/Drone_Multi-Sensor_Calibration/aruco_captures/*.jpg")
 
 for image_file in calibration_images:
     # Load the image and convert to grayscale
@@ -44,7 +44,7 @@ for image_file in calibration_images:
         color = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
         img = cv2.aruco.drawDetectedMarkers(color, corners, borderColor = (0,255,0))
         cv2.imshow('calibration image', img)
-        cv2.waitKey(500)
+        cv2.waitKey(200)
 
 # Perform camera calibration using the observed 2D and corresponding 3D points
 retval, camera_matrix, distortion_coefficients, rvecs, tvecs = cv2.calibrateCamera(gridboard.getObjPoints(), corners, gray.shape[::-1], None, None)
@@ -54,4 +54,4 @@ print('Camera matrix:\n', camera_matrix)
 print('Distortion coefficients:', distortion_coefficients)
 
 # Save the camera matrix and distortion coefficients to a file
-np.savez('calibration.npz', mtx=camera_matrix, dist=distortion_coefficients)
+np.savez('../calibration.npz', mtx=camera_matrix, dist=distortion_coefficients)
