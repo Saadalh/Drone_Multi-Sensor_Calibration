@@ -8,11 +8,11 @@ import os
 marker_size = 100
 
 # Define the number of rows and columns in the gridboard
-gridboard_rows = 4
-gridboard_cols = 5
+gridboard_rows = 5
+gridboard_cols = 7
 
 # Define the dictionary of ArUco markers to be used (in this case, the standard DICT_6X6_250 dictionary)
-dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
+dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 parameters =  cv2.aruco.DetectorParameters()
 
 # Initialize arrays to store the observed 2D points and corresponding 3D points
