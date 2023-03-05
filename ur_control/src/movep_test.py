@@ -10,7 +10,6 @@ if __name__ == "__main__":
         a = 0.1
         r = 0.05
         pose = rob.getl()
-        z1 = pose[2]
         """"
         pose[2] += l
         rob.movep(pose, acc=a, vel=v, wait=False)
@@ -35,8 +34,6 @@ if __name__ == "__main__":
             p = rob.getl(wait=True)
             if p[2] < pose[2] + 0.005:
                 break
-        z2 = p[2]
-        print("Difference in Z is: ", (z1-z2))
         #pose[1] -= l
         #rob.movep(pose, acc=a, vel=v, wait=True)
         #print("Move 4 is done.")
