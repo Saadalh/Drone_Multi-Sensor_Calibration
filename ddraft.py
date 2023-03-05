@@ -1,10 +1,12 @@
-import os 
+import numpy as np
+chessboardSize = (9,6)
 
-dir_path = os.path.realpath(os.path.dirname(__file__))
+objp = np.zeros((chessboardSize[0] * chessboardSize[1], 3), np.float32)
+objp[:,:2] = np.mgrid[0:chessboardSize[0],0:chessboardSize[1]].T.reshape(-1,2)
 
-# Create logging file
-filename = dir_path + "/../urx/test.txt"
-f = open(filename, "w")
-line = "hallo. hier ist ein test text."
-f.write(line)
-f.close()
+size_of_chessboard_squares_mm = 20
+
+print(objp)
+objp = objp * size_of_chessboard_squares_mm
+
+#print(objp)

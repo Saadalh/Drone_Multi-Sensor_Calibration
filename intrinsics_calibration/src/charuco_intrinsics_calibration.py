@@ -9,9 +9,12 @@ import os
 CHARUCOBOARD_ROWCOUNT = 7
 CHARUCOBOARD_COLCOUNT = 5 
 squareLength = 0.04
+squareLength_mm = 40
 markerLength = 0.031
 ARUCO_DICT = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 ARUCO_PARAM =  cv2.aruco.DetectorParameters()
+chessboardSize = (6,4)
+frameSize = (640,480)
 
 # Create constants to be passed into OpenCV and Aruco methods
 CHARUCO_BOARD = aruco.CharucoBoard(
@@ -20,8 +23,19 @@ CHARUCO_BOARD = aruco.CharucoBoard(
         markerLength,
         ARUCO_DICT)
 
+# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+objp = np.zeros((chessboardSize[0] * chessboardSize[1], 3), np.float32)
+objp[:,:2] = np.mgrid[0:chessboardSize[0],0:chessboardSize[1]].T.reshape(-1,2)
+
+objp = objp * squareLength_mm # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+objp = np.zeros((chessboardSize[0] * chessboardSize[1], 3), np.float32)
+objp[:,:2] = np.mgrid[0:chessboardSize[0],0:chessboardSize[1]].T.reshape(-1,2)
+
+objp = objp * squareLength_mm
+
 # Create the arrays and variables we'll use to store info like corners and IDs from images processed
-corners_all = [] # Corners discovered in all images processed
+imgpoints = [] # Corners discovered in all images processed (3d point in real world space)
+objpoints = [] # 2d point in image plane
 ids_all = [] # Aruco ids corresponding to corners discovered
 image_size = None # Determined at runtime
 dir_path = os.path.realpath(os.path.dirname(__file__))
@@ -57,8 +71,9 @@ for iname in images:
     # Requiring at least 20 squares
     if len(charuco_ids) > 20:
         # Add these corners and ids to our calibration arrays
-        corners_all.append(charuco_corners)
+        imgpoints.append(charuco_corners)
         ids_all.append(charuco_ids)
+        objpoints.append(objp)
         
         # Draw the Charuco board we've detected to show our calibrator the board was properly detected
         img = aruco.drawDetectedCornersCharuco(
@@ -100,14 +115,14 @@ if not image_size:
 
 # Now that we've seen all of our images, perform the camera calibration
 # based on the set of points we've discovered
-calibration, cameraMatrix, distCoeffs, rvecs, tvecs = cv2.calibrateCamera(ids_all, corners_all, image_size, None, None)
-calibration, cameraMatrix, distCoeffs, rvecs, tvecs = aruco.calibrateCameraAruco(
-        charucoCorners=corners_all,
-        charucoIds=ids_all,
-        board=CHARUCO_BOARD,
-        imageSize=image_size,
-        cameraMatrix=None,
-        distCoeffs=None)
+calibration, cameraMatrix, distCoeffs, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_size, None, None)
+#calibration, cameraMatrix, distCoeffs, rvecs, tvecs = aruco.calibrateCameraAruco(
+#       charucoCorners=imgpoints,
+#        charucoIds=ids_all,
+#        board=CHARUCO_BOARD,
+#        imageSize=image_size,
+#        cameraMatrix=None,
+#        distCoeffs=None)
     
 # Print matrix and distortion coefficient to the console
 print(cameraMatrix)
@@ -116,7 +131,7 @@ print(distCoeffs)
 # Save values to be used where matrix+dist is required, for instance for posture estimation
 # I save files in a pickle file, but you can use yaml or whatever works for you
 # Save the camera matrix and distortion coefficients to a file
-np.savez('../charuco_calibration_values.npz', mtx=cameraMatrix, dist=distCoeffs)
+np.savez(f'{dir_path}/../charuco_calibration_values.npz', mtx=cameraMatrix, dist=distCoeffs)
     
 # Print to console our success
-print('Calibration successful. Calibration file used: {}'.format('charuco_calibration_values.npz'))
+print(f'Calibration Successful. Calibration calues saved in: {dir_path}/../charuco_calibration_values.npz')

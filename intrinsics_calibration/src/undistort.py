@@ -1,6 +1,8 @@
 import cv2 as cv
 import numpy as np
-import argparse
+import argparse, os
+
+dir_path = os.path.realpath(os.path.dirname(__file__))
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", required=True, help="path to the distorted input image.")
@@ -10,7 +12,7 @@ args = vars(ap.parse_args())
 img = cv.imread(args["input"])
 
 # Load the npz file
-npzfile = np.load('/home/ubuntu/Python/Drone_Multi-Sensor_Calibration/calibration_values.npz')
+npzfile = np.load(f'{dir_path}/../charuco_calibration_values.npz')
 
 # Extract the matrix values
 intrinsic_matrix = npzfile['mtx']
