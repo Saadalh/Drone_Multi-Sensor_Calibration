@@ -38,4 +38,3 @@ final_orientation_vec = tuple(np.round(np.concatenate((point_a, final_orientatio
 print(f"Point A: {point_a}")
 print(f"Point B: {point_b}")
 print(f"Final Orientation: {final_orientation_vec}")
-
