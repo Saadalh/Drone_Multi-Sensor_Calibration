@@ -5,11 +5,12 @@ import numpy as np
 if __name__ == "__main__":
     rob = urx.Robot("172.31.1.200")
     try:
-        l = 0.1
+        l = 0.05
         v = 0.03
         a = 0.1
         r = 0.05
         pose = rob.getl()
+        print(type(pose))
         """"
         pose[2] += l
         rob.movep(pose, acc=a, vel=v, wait=False)
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         print("Move 2 is done.")
 
 """
-        pose[2] += l
+        pose[2] -= l
         rob.movep(pose, acc=a, vel=v, wait=False)
         while True:
             p = rob.getl(wait=True)
