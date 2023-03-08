@@ -22,10 +22,12 @@ cap_pos_x = -0.100 # random in the range of (-359, 220)
 cap_pos_y = -0.500 # random in the range of (-740, -320)
 cap_pos_z = 0.350 # random in the range of (203, 315)
 
-# Calculate the vector form the TCP to the target
+# Calculate and normalize the vector from the TCP to the target
 cap_target_vec = np.array([base_target_pose[0]-cap_pos_x, base_target_pose[1]-cap_pos_y, base_target_pose[2]-cap_pos_z])
 cap_target_vec = np.reshape(cap_target_vec, (1, -1))
+unit_cap_target_vec = cap_target_vec / np.linalg.norm(cap_target_vec)
 print(f"Target position in TCP CS: {cap_target_vec}")
+print(f"Normal target position in TCP CS: {cap_target_vec}")
 
 # Move the TCP to the capture position
 cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
