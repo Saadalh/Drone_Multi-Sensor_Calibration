@@ -17,7 +17,6 @@ args = parser.parse_args()
 # Radio, WiFi connection, and Path variables
 deck_port = args.p
 deck_ip = args.n
-dir_path = os.path.realpath(os.path.dirname(__file__))
 
 # WiFi connection method
 # If it didn't work outdent lines 31,32,33, and change main accordingly.
@@ -36,7 +35,7 @@ def rx_bytes(size, client_socket):
   return data
 
 # Image acquisition method
-def capture(start, count, client_socket):
+def capture(start, count, client_socket, dir_path):
     
     packetInfoRaw = rx_bytes(4, client_socket)
     #print(packetInfoRaw)
@@ -71,7 +70,7 @@ def capture(start, count, client_socket):
       #print("{}".format(meanTimePerImage))
       #print("{}".format(1/meanTimePerImage))
 
-      filename = dir_path+f"/../captures/img_{count:06d}_"+str(start)+".jpg"
+      filename = dir_path+f"/captures/img_{count:06d}_"+str(start)+".jpg"
       if format == 0:
           bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
           bayer_img.shape = (244, 324)
