@@ -26,13 +26,13 @@ time.sleep(0.2)
 actual_pose = rtde_r.getActualTCPPose()
 
 # Define the pose change wrt actual_pose
-relative_pose_change = [0, 0, 0.1, 0, 0, 0]
+relative_pose_change = [0, 0, 0, 0, 0.5, 0]
 
 # Get the new pose wrt base CS, this should shift the y-position with -0.1
 new_pose = rtde_c.poseTrans(actual_pose, relative_pose_change)
 
 # Move to the new pose
-rtde_c.moveJ_IK(new_pose, v, a, False)
+#rtde_c.moveJ_IK(new_pose, v, a, False)
 
 
 
