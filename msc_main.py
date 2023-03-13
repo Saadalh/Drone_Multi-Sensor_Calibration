@@ -1,16 +1,16 @@
-import ur_control.src.ur_control as urc
-import crazyflie.src.capture as cap
-import crazyflie.src.asynch_imu_log as imu
-import cflib.crtp
-from cflib.utils import uri_helper
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
-from cflib.crazyflie import Crazyflie
-import logging
+import crazyflie.src.asynch_imu_log as imu
 from cflib.crazyflie.log import LogConfig
-import time
-import os
-import csv
+import ur_control.src.ur_control as urc
+from cflib.crazyflie import Crazyflie
+import crazyflie.src.capture as cap
+from cflib.utils import uri_helper
+import cflib.crtp
 import argparse
+import logging
+import time
+import csv
+import os
 
 if __name__ == "__main__":
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         logger = imu.logging(logfile, scf, lg_stab)
         logger.start_async_log()
 
-        stations = 7 # Number of stations of capture, imu, and aruco pose data collection
+        stations = 3 # Number of stations of capture, imu, and aruco pose data collection
         timestamps = []
         for i in range(0, stations):
             # No need for IMU values when moving from home to first capture pose
@@ -85,9 +85,4 @@ if __name__ == "__main__":
 
         with open("imu_timestamps.csv", "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writer(timestamps)
-
-
-
-
-
+            writer.writerows(timestamps)

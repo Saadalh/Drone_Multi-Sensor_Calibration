@@ -29,7 +29,6 @@ class urControl:
         self.base_target_pose = [0.00745, -0.595, 0.146, 3.14, 0, 0]
         self.rtde_c.moveJ_IK(self.base_target_pose, self.v, self.a, False)
         time.sleep(0.2)
-        input("Place the center of the calibration object directly under the drone. Then press Enter to continue.")
 
     def move_random(self):
         # Generate random capture position
