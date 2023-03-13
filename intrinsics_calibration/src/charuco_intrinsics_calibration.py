@@ -22,7 +22,7 @@ class charuco:
                 self.ARUCO_DICT)
 
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-        self.objp = self.CHARUCO_BOARD.self.objPoints
+        self.objp = self.CHARUCO_BOARD.objPoints
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
         # All images used should be the same size, which if taken with the same camera shouldn't be a problem
@@ -135,20 +135,20 @@ class charuco:
                     cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids, color)
                     rvec = np.empty([3,1])
                     tvec = np.empty([3,1])
-                    retval = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, rvec, tvec)
+                    retval,rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, None, None)
 
-                    if retval[0] == True:
+                    if retval == True:
                         cv2.drawFrameAxes(img, cameraMatrix, distCoeffs, rvec, tvec, 0.1)
 
             print(f"retval: {retval}")
             print(f"rvec: {rvec}")
             print(f"tvec: {tvec}")
             cv2.imshow("out", img)
-            cv2.waitKey(0)
+            cv2.waitKey(10)
         return tvec, rvec
 
 if __name__ == "__main__":
-    calib_obj = charuco(6, 5, 0.04, 0.031)
+    calib_obj = charuco(7, 5, 0.04, 0.031)
     camMatrix, distCoef = calib_obj.intrinsicsCalibration()
     tvec, rvec = calib_obj.poseEstimation(camMatrix, distCoef)
 
