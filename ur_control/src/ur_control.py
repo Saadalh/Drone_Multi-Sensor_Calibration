@@ -16,6 +16,10 @@ class urControl:
         self.v = v
         self.a = a
 
+    def read_pose(self):
+        # Read current pose of the TCP
+        return self.rtde_r.getActualTCPPose()
+
     def target_generator(self):
         # Generate a random position based on the specified ranges
         ranpos_x = round(random.uniform(-0.100, 0.100), 4)

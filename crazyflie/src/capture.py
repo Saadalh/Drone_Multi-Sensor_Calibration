@@ -18,6 +18,8 @@ args = parser.parse_args()
 deck_port = args.p
 deck_ip = args.n
 
+direct_path = os.path.realpath(os.path.dirname(__file__))
+
 # WiFi connection method
 # If it didn't work outdent lines 31,32,33, and change main accordingly.
 def connect_wifi(deck_ip, deck_port):
@@ -70,7 +72,7 @@ def capture(start, count, client_socket, dir_path):
       #print("{}".format(meanTimePerImage))
       #print("{}".format(1/meanTimePerImage))
 
-      filename = dir_path+f"/captures/img_{count:06d}_"+str(start)+".jpg"
+      filename = dir_path+f"/../captures/img_{count:06d}_"+str(start)+".jpg"
       if format == 0:
           bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
           bayer_img.shape = (244, 324)
@@ -97,7 +99,7 @@ if __name__ == '__main__':
     # Capture execution
     start = time.time()
     count = 0
-    cap_num = capture(start, count, client_socket)
+    cap_num = capture(start, count, client_socket, direct_path)
 
 '''
     # Iterative capture execution

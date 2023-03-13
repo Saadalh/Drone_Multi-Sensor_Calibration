@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # Define robot-related parameters
     rob_ip = args.r
-    v = 0.15
+    v = 0.20
     a = 0.1
 
     # Create UR control object
@@ -67,22 +67,33 @@ if __name__ == "__main__":
 
         stations = 3 # Number of stations of capture, imu, and aruco pose data collection
         timestamps = []
+        ur_poses = []
         for i in range(0, stations):
             # No need for IMU values when moving from home to first capture pose
             if i == 0:
                 ur.move_random()
+                ur_poses.append(ur.read_pose())
                 cap.capture(time.time(), count, cs, dir_path)
+                time.sleep(1)
+                count += 1
             # Timestamp array to save the start and end timestamps in it
             timestamp = []
             # Move to a random position
             timestamp.append(time.time())
             ur.move_random()
             timestamp.append(time.time())
-            cap.capture(time.time(), count, cs, dir_path)
+            cap.capture(time.time(), count, cs, f"{dir_path}/../logs")
+            time.sleep(1)
+            ur_poses.append(ur.read_pose())
             timestamps.append(timestamp)
+            count += 1
 
         logger.stop_async_log()
 
-        with open(f"{dir_path}/imu_timestamps.csv", "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerows(timestamps)
+        with open(f"{dir_path}/../logs/imu_timestamps.csv", "w", newline="") as f:
+            imuwriter = csv.writer(f)
+            imuwriter.writerows(timestamps)
+        
+        with open(f"{dir_path}/../logs/pose_values.csv", "w", newline="") as f:
+            posewriter = csv.writer(f)
+            posewriter.writerows((ur_poses))
