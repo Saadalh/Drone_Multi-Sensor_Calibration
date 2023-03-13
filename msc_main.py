@@ -1,5 +1,5 @@
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
-import crazyflie.src.asynch_imu_log as imu
+import crazyflie.src.asynch_imu_log as imu 
 from cflib.crazyflie.log import LogConfig
 import ur_control.src.ur_control as urc
 from cflib.crazyflie import Crazyflie
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     deck_port = args.p
     deck_ip = args.n
     dir_path = os.path.realpath(os.path.dirname(__file__))
-    logfile = f"{dir_path}/imu_log.txt"
+    logfile = f"{dir_path}/logs/imu_log.txt"
     uri_add = args.u
     uri = uri_helper.uri_from_env(default=uri_add)
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             timestamp.append(time.time())
             ur.move_random()
             timestamp.append(time.time())
-            cap.capture(time.time(), count, cs, f"{dir_path}/../logs")
+            cap.capture(time.time(), count, cs, f"{dir_path}/logs")
             time.sleep(1)
             ur_poses.append(ur.read_pose())
             timestamps.append(timestamp)
@@ -90,10 +90,10 @@ if __name__ == "__main__":
 
         logger.stop_async_log()
 
-        with open(f"{dir_path}/../logs/imu_timestamps.csv", "w", newline="") as f:
+        with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
             imuwriter = csv.writer(f)
             imuwriter.writerows(timestamps)
         
-        with open(f"{dir_path}/../logs/pose_values.csv", "w", newline="") as f:
+        with open(f"{dir_path}/logs/pose_values.csv", "w", newline="") as f:
             posewriter = csv.writer(f)
             posewriter.writerows((ur_poses))
