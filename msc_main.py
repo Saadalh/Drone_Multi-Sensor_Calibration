@@ -83,6 +83,6 @@ if __name__ == "__main__":
 
         logger.stop_async_log()
 
-        with open("imu_timestamps.csv", "w", newline="") as f:
+        with open(f"{dir_path}/imu_timestamps.csv", "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerows(timestamps)
