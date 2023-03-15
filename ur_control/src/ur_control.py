@@ -50,11 +50,20 @@ class urControl:
 
         # Move the TCP to the capture position
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
-        self.rtde_c.moveL(cap_target_pose, self.v, self.a, False)
+        self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
         time.sleep(0.2)
 
         # Get the pose of the TCP to point at the capture pose relative to base
-        cap_target_pose_change = [0, 0, 0, cap_target_rotvec[0], cap_target_rotvec[1], cap_target_rotvec[2]]
+        yDist = cap_pos_y - self.base_target_pose[1]
+        xAng = np.arctan((yDist/cap_pos_z))
+        xDist = cap_pos_x - self.base_target_pose[0]
+        yAng = np.arctan((xDist/cap_pos_z))
+
+        cap_target_rotobj_hm = scipy.spatial.transform.Rotation.from_euler('xy', [xAng, yAng])
+        cap_target_rotvec_hm = cap_target_rotobj_hm.as_rotvec()
+
+        cap_target_pose_change = [0, 0, 0, cap_target_rotvec[0], cap_target_rotvec[1], 0]
+        #cap_target_pose_change = [0, 0, 0, cap_target_rotvec_hm[0], cap_target_rotvec_hm[1], 0]
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
         # Orient the TCP to point at the target
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)

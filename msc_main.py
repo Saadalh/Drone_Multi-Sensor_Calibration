@@ -1,3 +1,4 @@
+from intrinsics_calibration.src import charuco_intrinsics_calibration as charuco
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 import crazyflie.src.asynch_imu_log as imu 
 from cflib.crazyflie.log import LogConfig
@@ -26,7 +27,7 @@ if __name__ == "__main__":
 
     # Define robot-related parameters
     rob_ip = args.r
-    v = 0.20
+    v = 0.30
     a = 0.1
 
     # Create UR control object
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         logger = imu.logging(logfile, scf, lg_stab)
         logger.start_async_log()
 
-        stations = 3 # Number of stations of capture, imu, and aruco pose data collection
+        stations = 26 # Number of stations of capture, imu, and aruco pose data collection
         timestamps = []
         ur_poses = []
         for i in range(0, stations):
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             if i == 0:
                 ur.move_random()
                 ur_poses.append(ur.read_pose())
-                cap.capture(time.time(), count, cs, dir_path)
+                cap.capture(time.time(), count, cs, f"{dir_path}/logs")
                 time.sleep(1)
                 count += 1
             # Timestamp array to save the start and end timestamps in it
@@ -94,6 +95,14 @@ if __name__ == "__main__":
             imuwriter = csv.writer(f)
             imuwriter.writerows(timestamps)
         
-        with open(f"{dir_path}/logs/pose_values.csv", "w", newline="") as f:
+        with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
             posewriter = csv.writer(f)
-            posewriter.writerows((ur_poses))
+            posewriter.writerows(ur_poses)
+
+    charucoObj = charuco.charuco(3, 3, 0.063, 0.049, f"{dir_path}/logs/captures")
+    camMat, distCoef = charucoObj.intrinsicsCalibration()
+    charucoPoses = charucoObj.poseEstimation(camMat, distCoef)
+
+    with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
+        posewriter = csv.writer(f)
+        posewriter.writerows(charucoPoses)

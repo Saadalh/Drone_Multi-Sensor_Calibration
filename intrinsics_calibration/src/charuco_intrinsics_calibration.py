@@ -5,7 +5,7 @@ import glob
 import os
 
 class charuco:
-    def __init__(self, x_count, y_count, square_len, marker_len):
+    def __init__(self, x_count, y_count, square_len, marker_len, dir_path):
         # ChAruco board variables
         self.CHESSBOARD_X_COUNT = x_count
         self.CHESSBOARD_Y_COUNT = y_count
@@ -26,8 +26,8 @@ class charuco:
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
         # All images used should be the same size, which if taken with the same camera shouldn't be a problem
-        self.dir_path = os.path.realpath(os.path.dirname(__file__))
-        self.images = glob.glob(f'{self.dir_path}/../charuco_captures/*.jpg')
+        self.dir_path = dir_path
+        self.images = glob.glob(f'{self.dir_path}/*.jpg')
 
     def intrinsicsCalibration(self):
         # Create the arrays and variables we'll use to store info like corners and IDs from images processed
@@ -120,8 +120,9 @@ class charuco:
         return cameraMatrix, distCoeffs
 
     def poseEstimation(self, cameraMatrix, distCoeffs):
-        
+        poses = []
         for im in self.images:
+            pose = []
             # Open the image
             img = cv2.imread(im)
             # Detect marker corners
@@ -129,13 +130,16 @@ class charuco:
             if len(marker_ids) > 0:
                 cv2.aruco.drawDetectedMarkers(img, marker_corners, marker_ids)
                 _, charuco_corners, charuco_ids = aruco.interpolateCornersCharuco(marker_corners, marker_ids, img, self.CHARUCO_BOARD)
-                
+    
                 if len(charuco_ids) > 0:
                     color = (255, 0, 0)
                     cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids, color)
                     rvec = np.empty([3,1])
                     tvec = np.empty([3,1])
                     retval,rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, None, None)
+                    pose.append(tvec)
+                    pose.append(rvec)
+                    poses.append(pose)
 
                     if retval == True:
                         cv2.drawFrameAxes(img, cameraMatrix, distCoeffs, rvec, tvec, 0.1)
@@ -145,10 +149,11 @@ class charuco:
             print(f"tvec: {tvec}")
             cv2.imshow("out", img)
             cv2.waitKey(10)
-        return tvec, rvec
+        return poses
 
 if __name__ == "__main__":
-    calib_obj = charuco(7, 5, 0.04, 0.031)
+    dir_path = os.path.realpath(os.path.dirname(__file__))
+    dir_path =f"{dir_path}/../charuco_captures"
+    calib_obj = charuco(7, 5, 0.04, 0.031, dir_path)
     camMatrix, distCoef = calib_obj.intrinsicsCalibration()
     tvec, rvec = calib_obj.poseEstimation(camMatrix, distCoef)
-
