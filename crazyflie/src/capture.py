@@ -39,20 +39,23 @@ class Camera:
         return data
 
     # Continuous frames acquisition method
-    def stream_video(self, start, count, dir_path):
+    def start_stream(self, start, count, dir_path):
+        print("Stream Started")
         time.sleep(0.1)
         while(self.stream):
-            print(self.save)
+            print(f"Save is {self.save}")
             packetInfoRaw = self.rx_bytes(4)
             #print(packetInfoRaw)
+            #print("unpacking PacketInfo")
             [length, routing, function] = struct.unpack('<HBB', packetInfoRaw)
             #print("Length is {}".format(length))
             #print("Route is 0x{:02X}->0x{:02X}".format(routing & 0xF, routing >> 4))
             #print("Function is 0x{:02X}".format(function))
-
+            #print("GETTINGHEADER")
             imgHeader = self.rx_bytes((length - 2))
             #print(imgHeader)
             #print("Length of data is {}".format(len(imgHeader)))
+            #print("Unpacking Header!")
             [magic, width, height, depth, format, size] = struct.unpack('<BHHBBI', imgHeader)
 
             if magic == 0xBC:
@@ -62,8 +65,8 @@ class Camera:
             #print("Image size is {} bytes".format(size))
 
             # Now we start rx the image, this will be split up in packages of some size
+                #print("STUCK")
                 imgStream = bytearray() # Getting stuck here
-                print("STIUCK")
                 
                 while len(imgStream) < size:
                     packetInfoRaw = self.rx_bytes(4)
@@ -77,12 +80,13 @@ class Camera:
                 #print("{}".format(meanTimePerImage))
                 #print("{}".format(1/meanTimePerImage))
 
-                filename = dir_path+f"/../captures/img_{count:06d}_"+str(start)+".jpg"
+                filename = dir_path+f"/img_{count:06d}_"+str(start)+".jpg"
                 if format == 0:
                     bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
                     bayer_img.shape = (244, 324)
                     #cv2.imshow('Raw', bayer_img)
                     if self.save:
+                        print("Saving Capture...")
                         if not cv2.imwrite(filename, bayer_img):
                             raise Exception("Could not save capture image")
                     self.save = False
@@ -94,17 +98,20 @@ class Camera:
                 decoded = cv2.imdecode(nparr,cv2.IMREAD_UNCHANGED)
                 cv2.imshow('JPEG', decoded)
                 cv2.waitKey(1)
+        print("Stream Stopped")
 
     # On-demand single frame capturing method
     def capture(self):
-        time.sleep(5)
-        print("CAPTURE!")
         self.save = True
 
-        time.sleep(5)
-        print("CAPTURE!")
-        self.save = True
+    # Test capturing method
+    def capture_test(self):
+        for x in range(0,4):
+            time.sleep(3)
+            print("CAPTURE!")
+            self.save = True
 
+    def stop_stream(self):
         self.stream = False
 
 if __name__ == '__main__':
@@ -114,11 +121,19 @@ if __name__ == '__main__':
     camObj = Camera(deck_ip, deck_port)
     count = 0
 
-    video_thread = threading.Thread(target=camObj.stream_video, args=(time.time(), count, direct_path))
-    video_thread.start()
+    video_thread = threading.Thread(target=camObj.start_stream, args=(time.time(), count, direct_path))
+    capture_thread = threading.Thread(target=camObj.capture_test)
+    stop_thread = threading.Thread(target=camObj.stop_stream)
 
-    capture_thread = threading.Thread(target=camObj.capture)
+    video_thread.start()
     capture_thread.start()
+
+    capture_thread.join()
+
+    stop_thread.start()
+    stop_thread.join()
+
+    print("Done")
 
 '''      
     # Iterative capture execution
@@ -126,7 +141,7 @@ if __name__ == '__main__':
         print("Capture " + str(count+1))
         time.sleep(10)
         start = time.time()
-        stream_video(start, count, client_socket, direct_path)
+        start_stream(start, count, client_socket, direct_path)
         count+=1
 
     # Capture execution

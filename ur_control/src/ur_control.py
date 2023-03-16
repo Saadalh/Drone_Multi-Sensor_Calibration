@@ -22,7 +22,7 @@ class urControl:
 
     def target_generator(self):
         # Generate a random position based on the specified ranges
-        ranpos_x = round(random.uniform(-0.100, 0.100), 4)
+        ranpos_x = round(random.uniform(-0.100, 0.200), 4)
         ranpos_y = round(random.uniform(-0.500, -0.400), 4)
         ranpos_z = round(random.uniform(0.203, 0.315), 4)
 
@@ -45,8 +45,9 @@ class urControl:
         # Define the reference vector and calculate the required rotation values
         ref_vec = np.array([0, 0, 0.01])
         ref_vec = np.reshape(ref_vec, (1, -1))
-        cap_target_rotobj = scipy.spatial.transform.Rotation.align_vectors(cap_target_vec, ref_vec)
-        cap_target_rotvec = cap_target_rotobj[0].as_rotvec()
+        #cap_target_rotobj = scipy.spatial.transform.Rotation.align_vectors(cap_target_vec, ref_vec)
+        #cap_target_rotvec = cap_target_rotobj[0].as_euler('xy')
+        #print(f"Cap-Target-Rot: {cap_target_rotvec}")
 
         # Move the TCP to the capture position
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
@@ -55,15 +56,22 @@ class urControl:
 
         # Get the pose of the TCP to point at the capture pose relative to base
         yDist = cap_pos_y - self.base_target_pose[1]
-        xAng = np.arctan((yDist/cap_pos_z))
+        if yDist > 0:
+            xAng = -(np.arctan((abs(yDist)/cap_pos_z)))
+        else:
+            xAng = np.arctan((abs(yDist)/cap_pos_z))
+
         xDist = cap_pos_x - self.base_target_pose[0]
-        yAng = np.arctan((xDist/cap_pos_z))
+        if xDist > 0:
+            yAng = -np.arctan((abs(xDist)/cap_pos_z))
+        else:
+            yAng = (np.arctan((abs(xDist)/cap_pos_z)))
 
         cap_target_rotobj_hm = scipy.spatial.transform.Rotation.from_euler('xy', [xAng, yAng])
         cap_target_rotvec_hm = cap_target_rotobj_hm.as_rotvec()
 
-        cap_target_pose_change = [0, 0, 0, cap_target_rotvec[0], cap_target_rotvec[1], 0]
-        #cap_target_pose_change = [0, 0, 0, cap_target_rotvec_hm[0], cap_target_rotvec_hm[1], 0]
+        #cap_target_pose_change = [0, 0, 0, cap_target_rotvec[0], cap_target_rotvec[1], 0]
+        cap_target_pose_change = [0, 0, 0, xAng, yAng, 0]
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
         # Orient the TCP to point at the target
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)

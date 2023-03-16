@@ -7,6 +7,7 @@ from cflib.crazyflie import Crazyflie
 import crazyflie.src.capture as cap
 from cflib.utils import uri_helper
 import cflib.crtp
+import threading
 import argparse
 import logging
 import time
@@ -45,8 +46,9 @@ if __name__ == "__main__":
     uri = uri_helper.uri_from_env(default=uri_add)
 
     # Connect to crazyflie and initialize the client socket
-    cs = cap.connect_wifi(deck_ip, deck_port)
-    count = 0
+    cfCam = cap.Camera(deck_ip, deck_port)
+    start_thread = threading.Thread(target=cfCam.start_stream, args=(time.time(), 0, f"{dir_path}/logs/captures"))
+    stop_thread = threading.Thread(target=cfCam.stop_stream)
 
     # Initialize log parameters
     logging.basicConfig(level=logging.ERROR)
@@ -65,8 +67,9 @@ if __name__ == "__main__":
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         logger = imu.logging(logfile, scf, lg_stab)
         logger.start_async_log()
+        start_thread.start()
 
-        stations = 26 # Number of stations of capture, imu, and aruco pose data collection
+        stations = 25 # Number of stations of capture, imu, and aruco pose data collection
         timestamps = []
         ur_poses = []
         for i in range(0, stations):
@@ -74,22 +77,23 @@ if __name__ == "__main__":
             if i == 0:
                 ur.move_random()
                 ur_poses.append(ur.read_pose())
-                cap.capture(time.time(), count, cs, f"{dir_path}/logs")
+                cfCam.capture()
                 time.sleep(1)
-                count += 1
             # Timestamp array to save the start and end timestamps in it
             timestamp = []
             # Move to a random position
             timestamp.append(time.time())
             ur.move_random()
             timestamp.append(time.time())
-            cap.capture(time.time(), count, cs, f"{dir_path}/logs")
+            cfCam.capture()
             time.sleep(1)
             ur_poses.append(ur.read_pose())
             timestamps.append(timestamp)
-            count += 1
 
         logger.stop_async_log()
+        stop_thread.start()
+        stop_thread.join()
+        start_thread.join()
 
         with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
             imuwriter = csv.writer(f)

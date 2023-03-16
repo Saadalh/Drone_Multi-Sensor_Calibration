@@ -55,6 +55,7 @@ class charuco:
             # If a Charuco board was found, let's collect image/corner points
             # Requiring at least 20 squares
             if len(charuco_ids) > 20:
+                print("A charuco board was detected in image: {}".format(im))
                 # Add these corners and ids to our calibration arrays
                 corners2 = cv2.cornerSubPix(gray, charuco_corners, (11,11), (-1,-1), self.criteria)
                 corners_all.append(corners2)
@@ -81,7 +82,6 @@ class charuco:
                 #cv2.waitKey(10)
             else:
                 print("Not able to detect a charuco board in image: {}".format(im))
-            print("one is done")
 
         # Destroy any open CV windows
         cv2.destroyAllWindows()
