@@ -35,6 +35,7 @@ class Camera:
     def rx_bytes(self, size):
         data = bytearray()
         while len(data) < size:
+            print(f"size is: {len(data)}")
             data.extend(self.client_socket.recv(size-len(data))) # similar to append()
         return data
 
@@ -113,7 +114,7 @@ if __name__ == '__main__':
 
     stream_start_thread.start()
     
-    time.sleep(120)
+    time.sleep(60)
     
     stop_thread.start()
     stop_thread.join()
