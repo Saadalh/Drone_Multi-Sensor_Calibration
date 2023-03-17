@@ -47,8 +47,8 @@ if __name__ == "__main__":
 
     # Connect to crazyflie and initialize the client socket
     cfCam = cap.Camera(deck_ip, deck_port)
-    start_thread = threading.Thread(target=cfCam.start_stream, args=(time.time(), 0, f"{dir_path}/logs/captures"))
-    stop_thread = threading.Thread(target=cfCam.stop_stream)
+    stream_start_thread = threading.Thread(target=cfCam.start_stream, args=( 0, f"{dir_path}/logs/captures"))
+    stream_stop_thread = threading.Thread(target=cfCam.stop_stream)
 
     # Initialize log parameters
     logging.basicConfig(level=logging.ERROR)
@@ -67,46 +67,59 @@ if __name__ == "__main__":
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         logger = imu.logging(logfile, scf, lg_stab)
         logger.start_async_log()
-        start_thread.start()
+        stream_start_thread.start()
 
         stations = 25 # Number of stations of capture, imu, and aruco pose data collection
-        timestamps = []
-        ur_poses = []
-        for i in range(0, stations):
+        imu_timestamps = [] # List of target IMU timestamps 
+        capture_timestamps = [] # List of target capture timestamps 
+        ur_poses = [] # List of target robot poses
+
+        for i in range(0, stations+1):
             # No need for IMU values when moving from home to first capture pose
             if i == 0:
                 ur.move_random()
                 ur_poses.append(ur.read_pose())
-                cfCam.capture()
+                capture_timestamps.append(time.time())
+                #cfCam.capture()
                 time.sleep(1)
-            # Timestamp array to save the start and end timestamps in it
-            timestamp = []
+            # Timestamp array to save the start and end imu_timestamps in it
+            imu_timestamp = []
             # Move to a random position
-            timestamp.append(time.time())
+            imu_timestamp.append(time.time())
             ur.move_random()
-            timestamp.append(time.time())
-            cfCam.capture()
+            imu_timestamp.append(time.time())
+            capture_timestamps.append(time.time())
+            #cfCam.capture()
             time.sleep(1)
             ur_poses.append(ur.read_pose())
-            timestamps.append(timestamp)
+            imu_timestamps.append(imu_timestamp)
 
         logger.stop_async_log()
-        stop_thread.start()
-        stop_thread.join()
-        start_thread.join()
+        stream_stop_thread.start()
+        stream_stop_thread.join()
+        stream_start_thread.join()
 
+        # Save the target imu timestamps
         with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
             imuwriter = csv.writer(f)
-            imuwriter.writerows(timestamps)
+            imuwriter.writerows(imu_timestamps)
+
+        # Save the camera capture timestamps
+        with open(f"{dir_path}/logs/capture_timestamps.csv", "w", newline="") as f:
+            imuwriter = csv.writer(f)
+            imuwriter.writerows(capture_timestamps)
         
+        # Save the robot poses
         with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
             posewriter = csv.writer(f)
             posewriter.writerows(ur_poses)
 
+    # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses
     charucoObj = charuco.charuco(3, 3, 0.063, 0.049, f"{dir_path}/logs/captures")
     camMat, distCoef = charucoObj.intrinsicsCalibration()
     charucoPoses = charucoObj.poseEstimation(camMat, distCoef)
 
+    # Save the ChAruCo poses
     with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(charucoPoses)

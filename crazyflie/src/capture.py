@@ -39,30 +39,22 @@ class Camera:
         return data
 
     # Continuous frames acquisition method
-    def start_stream(self, start, count, dir_path):
+    def start_stream(self, count, dir_path):
         print("Stream Started")
         time.sleep(0.1)
         while(self.stream):
-            print(f"Save is {self.save}")
             packetInfoRaw = self.rx_bytes(4)
-            #print(packetInfoRaw)
+
             #print("unpacking PacketInfo")
             [length, routing, function] = struct.unpack('<HBB', packetInfoRaw)
-            #print("Length is {}".format(length))
-            #print("Route is 0x{:02X}->0x{:02X}".format(routing & 0xF, routing >> 4))
-            #print("Function is 0x{:02X}".format(function))
+
             #print("GETTINGHEADER")
             imgHeader = self.rx_bytes((length - 2))
-            #print(imgHeader)
-            #print("Length of data is {}".format(len(imgHeader)))
+
             #print("Unpacking Header!")
             [magic, width, height, depth, format, size] = struct.unpack('<BHHBBI', imgHeader)
 
             if magic == 0xBC:
-            #print("Magic is good")
-            #print("Resolution is {}x{} with depth of {} byte(s)".format(width, height, depth))
-            #print("Image format is {}".format(format))
-            #print("Image size is {} bytes".format(size))
 
             # Now we start rx the image, this will be split up in packages of some size
                 #print("STUCK")
@@ -71,22 +63,17 @@ class Camera:
                 while len(imgStream) < size:
                     packetInfoRaw = self.rx_bytes(4)
                     [length, dst, src] = struct.unpack('<HBB', packetInfoRaw)
-                    #print("Chunk size is {} ({:02X}->{:02X})".format(length, src, dst))
                     chunk = self.rx_bytes((length - 2))
                     imgStream.extend(chunk)
                 
                 count = count + 1
-                meanTimePerImage = (time.time()-start) / count
-                #print("{}".format(meanTimePerImage))
-                #print("{}".format(1/meanTimePerImage))
+                filename = dir_path+f"/img_{count:06d}_"+str(time.time())+".jpg"
 
-                filename = dir_path+f"/img_{count:06d}_"+str(start)+".jpg"
                 if format == 0:
                     bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
                     bayer_img.shape = (244, 324)
-                    #cv2.imshow('Raw', bayer_img)
-                    if self.save:
-                        print("Saving Capture...")
+                    if 1: # Add your frame saving condition here
+                        #print("Saving Capture...")
                         if not cv2.imwrite(filename, bayer_img):
                             raise Exception("Could not save capture image")
                     self.save = False
@@ -106,7 +93,7 @@ class Camera:
 
     # Test capturing method
     def capture_test(self):
-        for x in range(0,4):
+        for x in range(0, 4):
             time.sleep(3)
             print("CAPTURE!")
             self.save = True
@@ -119,35 +106,17 @@ if __name__ == '__main__':
     # Initialize the low-level cflib drivers
     cflib.crtp.init_drivers()
     camObj = Camera(deck_ip, deck_port)
-    count = 0
 
-    video_thread = threading.Thread(target=camObj.start_stream, args=(time.time(), count, direct_path))
-    capture_thread = threading.Thread(target=camObj.capture_test)
+    stream_start_thread = threading.Thread(target=camObj.start_stream, args=( 0, f"{direct_path}/../captures"))
+    capture_test_thread = threading.Thread(target=camObj.capture_test)
     stop_thread = threading.Thread(target=camObj.stop_stream)
 
-    video_thread.start()
-    capture_thread.start()
-
-    capture_thread.join()
-
+    stream_start_thread.start()
+    
+    time.sleep(120)
+    
     stop_thread.start()
     stop_thread.join()
+    stream_start_thread.join()
 
     print("Done")
-
-'''      
-    # Iterative capture execution
-    for i in range(0, 3):
-        print("Capture " + str(count+1))
-        time.sleep(10)
-        start = time.time()
-        start_stream(start, count, client_socket, direct_path)
-        count+=1
-
-    # Capture execution
-    start = time.time()
-    
-    cap_num = capture(start, count, client_socket, direct_path)
-
-'''
-    
