@@ -46,8 +46,8 @@ if __name__ == "__main__":
     uri = uri_helper.uri_from_env(default=uri_add)
 
     # Connect to crazyflie and initialize the client socket
-    cfCam = cap.Camera(deck_ip, deck_port)
-    stream_start_thread = threading.Thread(target=cfCam.start_stream, args=( 0, f"{dir_path}/logs/captures"))
+    cfCam = cap.Camera(deck_ip, deck_port, f"{dir_path}/logs/captures")
+    stream_start_thread = threading.Thread(target=cfCam.start_stream)
     stream_stop_thread = threading.Thread(target=cfCam.stop_stream)
 
     # Initialize log parameters
@@ -75,24 +75,30 @@ if __name__ == "__main__":
         ur_poses = [] # List of target robot poses
 
         for i in range(0, stations+1):
+            # Timestamp array to save the start and end imu_timestamps in it
+            imu_timestamp = []
+            capture_timestamp = []
+            ur_pose = []
             # No need for IMU values when moving from home to first capture pose
             if i == 0:
                 ur.move_random()
-                ur_poses.append(ur.read_pose())
-                capture_timestamps.append(time.time())
+                ur_pose.append(ur.read_pose())
+                capture_timestamp.append(time.time())
                 #cfCam.capture()
                 time.sleep(1)
-            # Timestamp array to save the start and end imu_timestamps in it
-            imu_timestamp = []
+                capture_timestamps.append(capture_timestamp)
+                ur_poses.append(ur_pose)
             # Move to a random position
             imu_timestamp.append(time.time())
             ur.move_random()
             imu_timestamp.append(time.time())
-            capture_timestamps.append(time.time())
+            capture_timestamp.append(time.time())
             #cfCam.capture()
             time.sleep(1)
-            ur_poses.append(ur.read_pose())
+            ur_pose.append(ur.read_pose())
             imu_timestamps.append(imu_timestamp)
+            capture_timestamps.append(capture_timestamp)
+            ur_poses.append(ur_pose)
 
         logger.stop_async_log()
         stream_stop_thread.start()
