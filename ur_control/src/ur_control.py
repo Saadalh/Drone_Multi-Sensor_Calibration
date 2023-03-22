@@ -32,7 +32,7 @@ class urControl:
         # Move the TCP to the point where the calibration object needs to be place
         self.base_target_pose = [0.00745, -0.595, 0.146, 3.14, 0, 0]
         self.rtde_c.moveJ_IK(self.base_target_pose, self.v, self.a, False)
-        time.sleep(0.2)
+        time.sleep(0.5)
 
     def move_random(self):
         # Generate random capture position
@@ -52,7 +52,7 @@ class urControl:
         # Move the TCP to the capture position
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         # Get the pose of the TCP to point at the capture pose relative to base
         yDist = cap_pos_y - self.base_target_pose[1]
@@ -75,7 +75,7 @@ class urControl:
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
         # Orient the TCP to point at the target
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     ip = "172.31.1.200"

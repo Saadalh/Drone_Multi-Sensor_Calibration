@@ -148,7 +148,7 @@ class charuco:
             print(f"rvec: {rvec}")
             print(f"tvec: {tvec}")
             cv2.imshow("out", img)
-            cv2.waitKey(10)
+            cv2.waitKey(0)
         return poses
 
 if __name__ == "__main__":
@@ -156,4 +156,4 @@ if __name__ == "__main__":
     dir_path =f"{dir_path}/../charuco_captures"
     calib_obj = charuco(7, 5, 0.04, 0.031, dir_path)
     camMatrix, distCoef = calib_obj.intrinsicsCalibration()
-    tvec, rvec = calib_obj.poseEstimation(camMatrix, distCoef)
+    poses_list = calib_obj.poseEstimation(camMatrix, distCoef)

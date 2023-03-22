@@ -10,6 +10,7 @@ import cflib.crtp
 import threading
 import argparse
 import logging
+import glob
 import time
 import csv
 import os
@@ -74,30 +75,28 @@ if __name__ == "__main__":
         capture_timestamps = [] # List of target capture timestamps 
         ur_poses = [] # List of target robot poses
 
-        for i in range(0, stations+1):
+        for i in range(0, stations-1):
             # Timestamp array to save the start and end imu_timestamps in it
             imu_timestamp = []
             capture_timestamp = []
             ur_pose = []
             # No need for IMU values when moving from home to first capture pose
             if i == 0:
-                ur.move_random()
-                ur_pose.append(ur.read_pose())
-                capture_timestamp.append(time.time())
-                #cfCam.capture()
-                time.sleep(1)
-                capture_timestamps.append(capture_timestamp)
-                ur_poses.append(ur_pose)
+                ur.move_random() # move to random pose  
+                ur_pose.append(ur.read_pose()) # read the robot pose
+                time.sleep(0.5)
+                capture_timestamp.append(time.time()) # get the capture timestamp
+                capture_timestamps.append(capture_timestamp) # append the capture timestamp
+                ur_poses.append(ur_pose) # append the pose
             # Move to a random position
-            imu_timestamp.append(time.time())
+            imu_timestamp.append(time.time()) # get the first imu timestamp
             ur.move_random()
-            imu_timestamp.append(time.time())
+            imu_timestamp.append(time.time()) # get the second imu timestamp
+            time.sleep(0.5)
             capture_timestamp.append(time.time())
-            #cfCam.capture()
-            time.sleep(1)
             ur_pose.append(ur.read_pose())
-            imu_timestamps.append(imu_timestamp)
-            capture_timestamps.append(capture_timestamp)
+            imu_timestamps.append(imu_timestamp) # append the imu pair
+            capture_timestamps.append(capture_timestamp) 
             ur_poses.append(ur_pose)
 
         logger.stop_async_log()
@@ -105,20 +104,53 @@ if __name__ == "__main__":
         stream_stop_thread.join()
         stream_start_thread.join()
 
-        # Save the target imu timestamps
-        with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
-            imuwriter = csv.writer(f)
-            imuwriter.writerows(imu_timestamps)
+    # Save the target imu timestamps
+    with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
+        imuwriter = csv.writer(f)
+        imuwriter.writerows(imu_timestamps)
 
-        # Save the camera capture timestamps
-        with open(f"{dir_path}/logs/capture_timestamps.csv", "w", newline="") as f:
-            imuwriter = csv.writer(f)
-            imuwriter.writerows(capture_timestamps)
-        
-        # Save the robot poses
-        with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
-            posewriter = csv.writer(f)
-            posewriter.writerows(ur_poses)
+    # Save the camera capture timestamps
+    with open(f"{dir_path}/logs/capture_timestamps.csv", "w", newline="") as f:
+        imuwriter = csv.writer(f)
+        imuwriter.writerows(capture_timestamps)
+    
+    # Save the robot poses
+    with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
+        posewriter = csv.writer(f)
+        posewriter.writerows(ur_poses)
+
+    # Get the file names of the needed captures
+    all_captures = glob.glob(f'{dir_path}/logs/captures/*.jpg')
+    capture_files = []
+    for ts in capture_timestamps:
+        timediff = 10
+        wantedcapnum = 0
+        wantedcapts = 0
+        for scap in all_captures:
+            caphead, captail = os.path.split(scap)
+            uscount = 0
+            dcount = 0
+            capts = ""
+            capnum = ""
+            for c in captail:
+                if c == ".":
+                    dcount += 1
+                if uscount == 2 and dcount < 2:
+                    capts += c 
+                if uscount == 1 and dcount == 0:
+                    capnum += c
+                if c == "_":
+                    uscount += 1
+            if abs(float(capts)-ts) < timediff:
+                timediff = abs(float(capts)-ts)
+                wantedcapts = capts
+                wantedcapnum = capnum
+        capture_files.append(f"{dir_path}/logs/captures/img_{wantedcapnum}{wantedcapts}.jpg")
+
+        # Delete all unwanted capture files
+        for cfile in all_captures:
+            if cfile not in capture_files:
+                os.remove(cfile)
 
     # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses
     charucoObj = charuco.charuco(3, 3, 0.063, 0.049, f"{dir_path}/logs/captures")
