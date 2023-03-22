@@ -1,10 +1,10 @@
-import numpy as np
-import random
-import math
-import time
-import scipy
 import rtde_control as rtdec
 import rtde_receive as rtder
+import numpy as np
+import random
+import scipy
+import math
+import time
 
 class urControl:
 

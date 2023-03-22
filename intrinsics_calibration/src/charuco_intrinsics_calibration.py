@@ -1,7 +1,7 @@
-import numpy as np
-import cv2
 from cv2 import aruco
+import numpy as np
 import glob
+import cv2
 import os
 
 class charuco:

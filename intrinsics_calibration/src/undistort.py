@@ -1,6 +1,6 @@
-import cv2 as cv
-import numpy as np
 import argparse, os
+import numpy as np
+import cv2 as cv
 
 dir_path = os.path.realpath(os.path.dirname(__file__))
 
