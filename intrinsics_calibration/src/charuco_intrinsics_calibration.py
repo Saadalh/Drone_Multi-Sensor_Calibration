@@ -54,14 +54,13 @@ class charuco:
 
             # If a Charuco board was found, let's collect image/corner points
             # Requiring at least 20 squares
-            if len(charuco_ids) > 20:
+            if len(charuco_ids) > ((self.CHESSBOARD_X_COUNT-1) * (self.CHESSBOARD_Y_COUNT-1)/2):
                 print("A charuco board was detected in image: {}".format(im))
                 # Add these corners and ids to our calibration arrays
                 corners2 = cv2.cornerSubPix(gray, charuco_corners, (11,11), (-1,-1), self.criteria)
                 corners_all.append(corners2)
                 ids_all.append(charuco_ids)
                 self.objpoints.append(self.objp)
-                
                 # Draw the Charuco board we've detected to show our calibrator the board was properly detected
                 img = aruco.drawDetectedCornersCharuco(
                         image=img,
@@ -73,11 +72,11 @@ class charuco:
                     image_size = gray.shape[::-1]
             
                 # Reproportion the image, maxing width or height at 1000
-                proportion = max(img.shape) / 1000.0
-                img = cv2.resize(img, (int(img.shape[1]/proportion), int(img.shape[0]/proportion)))
+                self.proportion = max(img.shape) / 1000.0
+                img = cv2.resize(img, (int(img.shape[1]/self.proportion), int(img.shape[0]/self.proportion)))
                 # Pause to display each image, waiting for key press
                 #cv2.imshow(im, img)
-                #cv2.waitKey(200)
+                ##cv2.waitKey(0)
                 #cv2.destroyWindow(im)
                 #cv2.waitKey(10)
             else:
@@ -127,7 +126,7 @@ class charuco:
             img = cv2.imread(im)
             # Detect marker corners
             marker_corners, marker_ids, _ = cv2.aruco.detectMarkers(img, self.ARUCO_DICT)
-            if len(marker_ids) > 0:
+            if len(marker_ids) > 5:
                 cv2.aruco.drawDetectedMarkers(img, marker_corners, marker_ids)
                 _, charuco_corners, charuco_ids = aruco.interpolateCornersCharuco(marker_corners, marker_ids, img, self.CHARUCO_BOARD)
     
@@ -147,13 +146,14 @@ class charuco:
             print(f"retval: {retval}")
             print(f"rvec: {rvec}")
             print(f"tvec: {tvec}")
+            img = cv2.resize(img, (int(img.shape[1]/self.proportion), int(img.shape[0]/self.proportion)))
             cv2.imshow("out", img)
             cv2.waitKey(0)
         return poses
 
 if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))
-    dir_path =f"{dir_path}/../charuco_captures"
-    calib_obj = charuco(7, 5, 0.04, 0.031, dir_path)
+    dir_path =f"{dir_path}/../../logs/4x6_captures"
+    calib_obj = charuco(6, 4, 0.047, 0.037, dir_path)
     camMatrix, distCoef = calib_obj.intrinsicsCalibration()
     poses_list = calib_obj.poseEstimation(camMatrix, distCoef)

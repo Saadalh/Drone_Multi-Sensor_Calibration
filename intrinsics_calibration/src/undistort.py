@@ -9,7 +9,7 @@ ap.add_argument("-i", "--input", required=True, help="path to the distorted inpu
 args = vars(ap.parse_args())
 
 # Load the npz file
-npzfile = np.load(f'{dir_path}/../charuco_calibration_values.npz')
+npzfile = np.load(f'{dir_path}/../../logs/charuco_calibration_values.npz')
 
 # Extract the matrix values
 intrinsic_matrix = npzfile['mtx']

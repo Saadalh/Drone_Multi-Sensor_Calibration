@@ -115,9 +115,9 @@ class Camera():
                 if format == 0:
                     bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
                     bayer_img.shape = (244, 324)
-                    cv2.imshow('Raw', bayer_img)
+                    #cv2.imshow('Raw', bayer_img)
                     cv2.imwrite(f"{self.dpath}/img_{count:06d}_{time.time()}.jpg", bayer_img)
-                    cv2.waitKey(1)
+                    #cv2.waitKey(1)
                 else:
                     with open("img.jpeg", "wb") as f:
                         f.write(imgStream)
@@ -126,6 +126,7 @@ class Camera():
                     cv2.imshow('JPEG', decoded)
                     cv2.waitKey(1)
         print("Stream Stopped.")
+        cv2.destroyAllWindows()
 
     def stop_stream(self):
         self.stream = False

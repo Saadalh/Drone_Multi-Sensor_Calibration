@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 import time
 import scipy
 import rtde_control as rtdec
@@ -20,23 +21,65 @@ class urControl:
         # Read current pose of the TCP
         return self.rtde_r.getActualTCPPose()
 
-    def target_generator(self):
+    def random_pose_generator(self):
         # Generate a random position based on the specified ranges
-        ranpos_x = round(random.uniform(-0.100, 0.200), 4)
-        ranpos_y = round(random.uniform(-0.500, -0.400), 4)
-        ranpos_z = round(random.uniform(0.203, 0.315), 4)
+        ranpos_x = round(random.uniform(-0.200, 0.200), 4)
+        ranpos_y = round(random.uniform(-0.580, -0.250), 4)
+        ranpos_z = round(random.uniform(0.350, 0.415), 4)
 
         return ranpos_x, ranpos_y, ranpos_z
+    
+    def systematic_pose_generator(pose, numbers, layers, factor, increase):
+
+        poses = np.empty((layers, numbers, 6))
+
+        # Define variabels
+        trans = 80 # distance between the levels -> change the distances for your usecase
+
+        rot = 10 # angle for the tilt of the camera -> change the tilt for your usecase
+
+        for n in range(layers):
+            multiplierT = factor + (increase*n)
+
+            multiplierR = factor + (increase*(0.25*n))
+
+            for i in range(numbers):
+
+                ########
+
+                # Program it as a 4x4 Matrix and use the translation vectors to rotate the robot arm
+
+                # Defeinieren eines Roatationsvektor und eines Translationsvektor
+
+                ########
+
+                #print("n: " + str(n))
+
+                poses[n][i][0] = pose[0]+(multiplierT*trans*(math.sin(math.radians((360/numbers)*i))))
+
+                poses[n][i][1] = pose[1]+ trans*(n+1) #mutliplierT
+
+                poses[n][i][2] = pose[2]+(multiplierT*trans*(math.cos(math.radians((360/numbers)*i))))
+
+                poses[n][i][3] = pose[3]+math.sin(math.radians(rot*multiplierR))*(math.cos(math.radians((360/numbers)*i)))
+
+                poses[n][i][4] = pose[4]+math.sin(math.radians(rot*multiplierR))*-(math.sin(math.radians((360/numbers)*i)))#+(rot*cos((360/numbers)*i))
+
+                poses[n][i][5] = pose[5]
+
+        #print("Positionen: "+ str(poses))
+
+        return poses
 
     def move_home(self):
         # Move the TCP to the point where the calibration object needs to be place
-        self.base_target_pose = [0.00745, -0.595, 0.146, 3.14, 0, 0]
+        self.base_target_pose = [0.00745, -0.440, 0.146, 3.14, 0, 0]
         self.rtde_c.moveJ_IK(self.base_target_pose, self.v, self.a, False)
         time.sleep(0.5)
 
-    def move_random(self):
+    def move_target(self):
         # Generate random capture position
-        cap_pos_x, cap_pos_y, cap_pos_z = self.target_generator()
+        cap_pos_x, cap_pos_y, cap_pos_z = self.random_pose_generator()
 
         # Calculate the vector from the TCP to the target
         cap_target_vec = np.array([self.base_target_pose[0]-cap_pos_x, -(self.base_target_pose[1]-cap_pos_y), -(0.0065-cap_pos_z)])
@@ -84,6 +127,6 @@ if __name__ == "__main__":
 
     urc = urControl(ip, v, a)
     urc.move_home()
-    urc.move_random()
-    urc.move_random()
+    urc.move_target()
+    urc.move_target()
     urc.move_home()
