@@ -120,6 +120,9 @@ class charuco:
 
     def poseEstimation(self, cameraMatrix, distCoeffs):
         poses = []
+        rvecs = []
+        tvecs = []
+
         for im in self.images:
             pose = []
             # Open the image
@@ -137,7 +140,9 @@ class charuco:
                     tvec = np.empty([3,1])
                     retval,rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, None, None)
                     pose.append(tvec)
+                    tvecs.append(tvec)
                     pose.append(rvec)
+                    rvecs.append(rvec)
                     poses.append(pose)
 
                     if retval == True:
@@ -149,7 +154,7 @@ class charuco:
             img = cv2.resize(img, (int(img.shape[1]/self.proportion), int(img.shape[0]/self.proportion)))
             cv2.imshow("out", img)
             cv2.waitKey(0)
-        return poses
+        return poses, rvecs, tvecs
 
 if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))

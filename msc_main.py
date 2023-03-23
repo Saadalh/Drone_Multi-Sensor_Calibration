@@ -7,6 +7,7 @@ from cflib.crazyflie import Crazyflie
 import crazyflie.src.capture as cap
 from cflib.utils import uri_helper
 import cflib.crtp
+import cv2 as cv
 import threading
 import argparse
 import logging
@@ -73,7 +74,10 @@ if __name__ == "__main__":
         stations = 15 # Number of stations of capture, imu, and aruco pose data collection
         imu_timestamps = [] # List of target IMU timestamps 
         capture_timestamps = [] # List of target capture timestamps 
-        ur_poses = [] # List of target robot poses
+        ur_poses = [] # List of TCP poses
+        tcp_rvecs = [] # List of TCP rot vectors
+        tcp_tvecs = [] # List of TCP trans vectors
+        imu_dict_list = [] # Each element is dictionary of the 6 imu values
 
         for i in range(0, stations):
             # Timestamp array to save the start and end imu_timestamps in it
@@ -83,11 +87,17 @@ if __name__ == "__main__":
             # No need for IMU values when moving from home to first capture pose
             if i == 0:
                 ur.move_target() # move to random pose  
-                ur_pose.append(ur.read_pose()) # read the robot pose
+                robrvec, robtvec = ur.read_pose() # read the robot pose
                 time.sleep(0.5)
                 capture_timestamp.append(time.time()) # get the capture timestamp
+                time.sleep(0.2)
                 capture_timestamps.append(capture_timestamp) # append the capture timestamp
-                ur_poses.append(ur_pose) # append the pose
+                ur_pose.append("Rotation Vector", "Translation Vector")
+                ur_pose.append(robrvec) # create the pose pair
+                ur_pose.append(robtvec)
+                tcp_rvecs.append(robrvec) # append rotation part
+                tcp_tvecs.append(robtvec) # append translation part
+                ur_poses.append(ur_pose) # append the pose pair
             else:
                 # Move to a random position
                 imu_timestamp.append(time.time()) # get the first imu timestamp
@@ -95,12 +105,17 @@ if __name__ == "__main__":
                 imu_timestamp.append(time.time()) # get the second imu timestamp
                 time.sleep(0.5)
                 capture_timestamp.append(time.time())
-                ur_pose.append(ur.read_pose())
+                time.sleep(0.2)
+                robrvec, robtvec = ur.read_pose()
                 imu_timestamps.append(imu_timestamp) # append the imu pair
                 capture_timestamps.append(capture_timestamp) 
+                ur_pose.append(robrvec)
+                ur_pose.append(robtvec)
+                tcp_rvecs.append(robrvec)
+                tcp_tvecs.append(robtvec)
                 ur_poses.append(ur_pose)
 
-        logger.stop_async_log()
+        imu_dict_list = logger.stop_async_log()
         stream_stop_thread.start()
         stream_stop_thread.join()
         stream_start_thread.join()
@@ -151,9 +166,15 @@ if __name__ == "__main__":
     # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses
     charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f"{dir_path}/logs/captures")
     camMat, distCoef = charucoObj.intrinsicsCalibration()
-    charucoPoses = charucoObj.poseEstimation(camMat, distCoef)
+    charucoPoses, charuco_rvecs, charuco_tvecs = charucoObj.poseEstimation(camMat, distCoef) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
 
     # Save the ChAruCo poses
     with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(charucoPoses)
+
+    # Perform the hand-eye calibration to get X. (Camera to TCP)
+    r_4to1, t_4to1 = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method="CALIB_HAND_EYE_TSAI")
+    print(f"rotation cam2grip matrix: {r_4to1}")
+    print(f"##################################")
+    print(f"translation cam2grip matrix: {t_4to1}")

@@ -22,6 +22,7 @@ class logging:
 
     def __init__(self, logfile, scf, logconf):
         self.fstream = open(logfile, "w")
+        self.datadictlist = []
         self.cf = scf.cf
         self.logconf = logconf
         self.cf.log.add_config(self.logconf)
@@ -31,12 +32,14 @@ class logging:
         line = f"[{time.time()}][{timestamp}][{logconf.name}]: {data}\n"
         #print('[%d][%d][%s]: %s' % (time.time(), timestamp, logconf.name, data))
         self.fstream.write(line)
+        self.datadictlist.append(data)
 
     def start_async_log(self):
         self.logconf.start()
 
     def stop_async_log(self):
         self.logconf.stop()
+        return self.datadictlist
 
 if __name__ == '__main__':
     # Initialize the low-level drivers
