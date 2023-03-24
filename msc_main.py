@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # Initialize the low-level drivers
     cflib.crtp.init_drivers()
 
-    # Radio, WiFi connection, and Path variables
+    # cfRadio, cfWiFi connection, and Path variables
     deck_port = args.p
     deck_ip = args.n
     dir_path = os.path.realpath(os.path.dirname(__file__))
@@ -55,12 +55,12 @@ if __name__ == "__main__":
     # Initialize log parameters
     logging.basicConfig(level=logging.ERROR)
     lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
-    lg_stab.add_variable('stabilizer.roll', 'float')
-    lg_stab.add_variable('stabilizer.pitch', 'float')
-    lg_stab.add_variable('stabilizer.yaw', 'float')
     lg_stab.add_variable('stateEstimateZ.x', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.y', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.z', 'int16_t')
+    lg_stab.add_variable('stabilizer.roll', 'float')
+    lg_stab.add_variable('stabilizer.pitch', 'float')
+    lg_stab.add_variable('stabilizer.yaw', 'float')
 
     # Move to home pose where the calibration object needs to be place
     ur.move_home()
@@ -68,18 +68,19 @@ if __name__ == "__main__":
 
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         logger = imu.logging(logfile, scf, lg_stab)
-        logger.start_async_log()
-        stream_start_thread.start()
+        logger.start_async_log() # start IMU logging
+        stream_start_thread.start() # start camera streaming
 
-        stations = 15 # Number of stations of capture, imu, and aruco pose data collection
         imu_timestamps = [] # List of target IMU timestamps 
+
         capture_timestamps = [] # List of target capture timestamps 
+
         ur_poses = [] # List of TCP poses
         tcp_rvecs = [] # List of TCP rot vectors
         tcp_tvecs = [] # List of TCP trans vectors
-        imu_dict_list = [] # Each element is dictionary of the 6 imu values
 
-        for i in range(0, stations):
+        stations = 15 # Number of stations of capture, imu, and aruco pose data collection
+        for i in range(stations):
             # Timestamp array to save the start and end imu_timestamps in it
             imu_timestamp = []
             capture_timestamp = []
@@ -92,9 +93,9 @@ if __name__ == "__main__":
                 capture_timestamp.append(time.time()) # get the capture timestamp
                 time.sleep(0.2)
                 capture_timestamps.append(capture_timestamp) # append the capture timestamp
-                ur_pose.append("Rotation Vector", "Translation Vector")
-                ur_pose.append(robrvec) # create the pose pair
-                ur_pose.append(robtvec)
+                ur_pose.append("Translation Vector", "Rotation Vector")
+                ur_pose.append(robtvec) # create the pose pair
+                ur_pose.append(robrvec)
                 tcp_rvecs.append(robrvec) # append rotation part
                 tcp_tvecs.append(robtvec) # append translation part
                 ur_poses.append(ur_pose) # append the pose pair
@@ -109,18 +110,28 @@ if __name__ == "__main__":
                 robrvec, robtvec = ur.read_pose()
                 imu_timestamps.append(imu_timestamp) # append the imu pair
                 capture_timestamps.append(capture_timestamp) 
-                ur_pose.append(robrvec)
                 ur_pose.append(robtvec)
+                ur_pose.append(robrvec)
                 tcp_rvecs.append(robrvec)
                 tcp_tvecs.append(robtvec)
                 ur_poses.append(ur_pose)
 
-        imu_dict_list = logger.stop_async_log()
+        imu_dict_list = logger.stop_async_log() # Each element is a dictionary of the 6 imu values
         stream_stop_thread.start()
         stream_stop_thread.join()
         stream_start_thread.join()
 
-    # Save the target imu timestamps
+    # Get the wanted IMU logs
+    station_imus = []
+    for imutsp in imu_timestamps:
+        for imuts in imutsp:
+            timediff = 100
+            dummy_imu_dict = {}
+            for dict in imu_dict_list:
+                if abs(dict["timestamp"]-imuts) < timediff:
+                    timediff = abs(dict["timestamp"]-imuts)
+
+    # Save the target IMU timestamps
     with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
         imuwriter = csv.writer(f)
         imuwriter.writerows(imu_timestamps)
@@ -174,7 +185,7 @@ if __name__ == "__main__":
         posewriter.writerows(charucoPoses)
 
     # Perform the hand-eye calibration to get X. (Camera to TCP)
-    r_4to1, t_4to1 = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method="CALIB_HAND_EYE_TSAI")
-    print(f"rotation cam2grip matrix: {r_4to1}")
+    r_X, t_X = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method="CALIB_HAND_EYE_TSAI")
+    print(f"translation cam2grip, X, matrix: {t_X}")
     print(f"##################################")
-    print(f"translation cam2grip matrix: {t_4to1}")
+    print(f"rotation cam2grip, X, matrix: {r_X}")

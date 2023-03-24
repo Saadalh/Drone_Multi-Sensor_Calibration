@@ -31,7 +31,8 @@ class logging:
     def log_stab_callback(self, timestamp, data, logconf):
         line = f"[{time.time()}][{timestamp}][{logconf.name}]: {data}\n"
         #print('[%d][%d][%s]: %s' % (time.time(), timestamp, logconf.name, data))
-        self.fstream.write(line)
+        #self.fstream.write(line)
+        data["timestamp"] = time.time()
         self.datadictlist.append(data)
 
     def start_async_log(self):
@@ -46,17 +47,17 @@ if __name__ == '__main__':
     cflib.crtp.init_drivers()
 
     lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
-    lg_stab.add_variable('stabilizer.roll', 'float')
-    lg_stab.add_variable('stabilizer.pitch', 'float')
-    lg_stab.add_variable('stabilizer.yaw', 'float')
     lg_stab.add_variable('stateEstimateZ.x', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.y', 'int16_t')
     lg_stab.add_variable('stateEstimateZ.z', 'int16_t')
+    lg_stab.add_variable('stabilizer.roll', 'float')
+    lg_stab.add_variable('stabilizer.pitch', 'float')
+    lg_stab.add_variable('stabilizer.yaw', 'float')
 
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
 
         logger = logging(logfile, scf, lg_stab)
         logger.start_async_log()
-        time.sleep(5)
+        time.sleep(50)
         logger.stop_async_log()
 
