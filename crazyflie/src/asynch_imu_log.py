@@ -31,7 +31,7 @@ class logging:
     def log_stab_callback(self, timestamp, data, logconf):
         line = f"[{time.time()}][{timestamp}][{logconf.name}]: {data}\n"
         #print('[%d][%d][%s]: %s' % (time.time(), timestamp, logconf.name, data))
-        #self.fstream.write(line)
+        self.fstream.write(line)
         data["timestamp"] = time.time()
         self.datadictlist.append(data)
 

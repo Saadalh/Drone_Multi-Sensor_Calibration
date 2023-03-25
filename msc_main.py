@@ -78,8 +78,10 @@ if __name__ == "__main__":
         ur_poses = [] # List of TCP poses
         tcp_rvecs = [] # List of TCP rot vectors
         tcp_tvecs = [] # List of TCP trans vectors
+        ur_pose_labels = ["Translation Vector", "Rotation Vector"]
+        ur_poses.append(ur_pose_labels)
 
-        stations = 15 # Number of stations of capture, imu, and aruco pose data collection
+        stations = 10 # Number of stations of capture, imu, and aruco pose data collection
         for i in range(stations):
             # Timestamp array to save the start and end imu_timestamps in it
             imu_timestamp = []
@@ -93,7 +95,6 @@ if __name__ == "__main__":
                 capture_timestamp.append(time.time()) # get the capture timestamp
                 time.sleep(0.2)
                 capture_timestamps.append(capture_timestamp) # append the capture timestamp
-                ur_pose.append("Translation Vector", "Rotation Vector")
                 ur_pose.append(robtvec) # create the pose pair
                 ur_pose.append(robrvec)
                 tcp_rvecs.append(robrvec) # append rotation part
@@ -107,7 +108,7 @@ if __name__ == "__main__":
                 time.sleep(0.5)
                 capture_timestamp.append(time.time())
                 time.sleep(0.2)
-                robrvec, robtvec = ur.read_pose()
+                robrvec, robtvec = ur.read_pose() # results in two np.array(1x3)
                 imu_timestamps.append(imu_timestamp) # append the imu pair
                 capture_timestamps.append(capture_timestamp) 
                 ur_pose.append(robtvec)
@@ -122,19 +123,24 @@ if __name__ == "__main__":
         stream_start_thread.join()
 
     # Get the wanted IMU logs
-    station_imus = []
+    stations_imu = []
     for imutsp in imu_timestamps:
+        imutsp_list = []
         for imuts in imutsp:
+            print(imuts)
             timediff = 100
             dummy_imu_dict = {}
             for dict in imu_dict_list:
                 if abs(dict["timestamp"]-imuts) < timediff:
                     timediff = abs(dict["timestamp"]-imuts)
-
-    # Save the target IMU timestamps
-    with open(f"{dir_path}/logs/imu_timestamps.csv", "w", newline="") as f:
+                    dummy_imu_dict = dict
+            imutsp_list.append(dummy_imu_dict)
+        stations_imu.append(imutsp_list)
+        
+    # Save the target IMU poses
+    with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
         imuwriter = csv.writer(f)
-        imuwriter.writerows(imu_timestamps)
+        imuwriter.writerows(stations_imu)
 
     # Save the robot poses
     with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
@@ -146,8 +152,6 @@ if __name__ == "__main__":
     capture_files = []
     for ts in capture_timestamps:
         timediff = 10
-        wantedcapnum = 0
-        wantedcapts = 0
         for scap in all_captures:
             caphead, captail = os.path.split(scap)
             uscount = 0
@@ -175,17 +179,32 @@ if __name__ == "__main__":
             os.remove(cfile)
 
     # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses
-    charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f"{dir_path}/logs/captures")
+    charucoObj = charuco.charuco(5, 3, 55, 43, f"{dir_path}/logs/captures")
     camMat, distCoef = charucoObj.intrinsicsCalibration()
     charucoPoses, charuco_rvecs, charuco_tvecs = charucoObj.poseEstimation(camMat, distCoef) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
 
     # Save the ChAruCo poses
     with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
+   #     for i in range(len(charuco_rvecs)):
+  #          dummy_pose = []
+ #           dummy_pose.append(charuco_rvecs[i])
+#            dummy_pose.append(charuco_tvecs[i])
         posewriter.writerows(charucoPoses)
 
     # Perform the hand-eye calibration to get X. (Camera to TCP)
-    r_X, t_X = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method="CALIB_HAND_EYE_TSAI")
+    r_X, t_X = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
     print(f"translation cam2grip, X, matrix: {t_X}")
     print(f"##################################")
     print(f"rotation cam2grip, X, matrix: {r_X}")
+    print(f"##################################")
+    print(f"type of tcprvec: {type(tcp_rvecs[0])}")
+    print(f"type of charucorvec: {type(charuco_rvecs[0])}")
+
+    # Save the X hand-eye calibration matrix
+    with open(f"{dir_path}/logs/gripper2camera_calibMat.txt", "w") as f:
+        f.write("Translation:\n")
+        f.write(str(t_X))
+        f.write("\n")
+        f.write("Rotation:\n")
+        f.write(str(r_X))

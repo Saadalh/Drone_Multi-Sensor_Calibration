@@ -97,8 +97,8 @@ class urControl:
 
         # Move the TCP to the capture position
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
-        self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
-        time.sleep(0.1)
+        #self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
+        #time.sleep(0.1)
 
         # Get the pose of the TCP to point at the capture pose relative to base
         yDist = cap_pos_y - self.base_target_pose[1]

@@ -136,9 +136,11 @@ class charuco:
                 if len(charuco_ids) > 0:
                     color = (255, 0, 0)
                     cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids, color)
-                    rvec = np.empty([3,1])
-                    tvec = np.empty([3,1])
-                    retval,rvec, tvec = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, None, None)
+                    retval,_rvec, _tvec = cv2.aruco.estimatePoseCharucoBoard(charuco_corners, charuco_ids, self.CHARUCO_BOARD, cameraMatrix, distCoeffs, None, None)
+                    
+                    rvec = np.array([_rvec[0],_rvec[1],_rvec[2]])
+                    tvec = np.array([_tvec[0],_tvec[1],_tvec[2]])
+                    
                     pose.append(tvec)
                     tvecs.append(tvec)
                     pose.append(rvec)
