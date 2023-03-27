@@ -4,6 +4,7 @@ import crazyflie.src.asynch_imu_log as imu
 from cflib.crazyflie.log import LogConfig
 import ur_control.src.ur_control as urc
 from cflib.crazyflie import Crazyflie
+import crazyflie.src.imu_trans2pose as t2p
 import crazyflie.src.capture as cap
 from cflib.utils import uri_helper
 import cflib.crtp
@@ -122,27 +123,29 @@ if __name__ == "__main__":
         stream_stop_thread.join()
         stream_start_thread.join()
 
-    # Get the wanted IMU logs
-    stations_imu = []
+    # Get the wanted IMU poses
+    stations_imu = [] # a list for each station transformation
     for imutsp in imu_timestamps:
-        imutsp_list = []
+        imutsp_list = [] # a list for each pose pair
         for imuts in imutsp:
             print(imuts)
             timediff = 100
-            dummy_imu_dict = {}
+            dummy_imu_dict = {} # a dictionary for each pose
             for dict in imu_dict_list:
                 if abs(dict["timestamp"]-imuts) < timediff:
                     timediff = abs(dict["timestamp"]-imuts)
                     dummy_imu_dict = dict
             imutsp_list.append(dummy_imu_dict)
         stations_imu.append(imutsp_list)
-        
-    # Save the target IMU poses
+    # Create a pose reference and apply the imu transformations
+    imu_poses = t2p.imu_trans2pose(stations_imu)
+
+    # Save the target IMU poses (m, degree)
     with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
         imuwriter = csv.writer(f)
-        imuwriter.writerows(stations_imu)
+        imuwriter.writerows(imu_poses)
 
-    # Save the robot poses
+    # Save the robot poses (m, radian)
     with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(ur_poses)
@@ -183,13 +186,9 @@ if __name__ == "__main__":
     camMat, distCoef = charucoObj.intrinsicsCalibration()
     charucoPoses, charuco_rvecs, charuco_tvecs = charucoObj.poseEstimation(camMat, distCoef) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
 
-    # Save the ChAruCo poses
+    # Save the ChAruCo poses (m, radian)
     with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
-   #     for i in range(len(charuco_rvecs)):
-  #          dummy_pose = []
- #           dummy_pose.append(charuco_rvecs[i])
-#            dummy_pose.append(charuco_tvecs[i])
         posewriter.writerows(charucoPoses)
 
     # Perform the hand-eye calibration to get X. (Camera to TCP)
