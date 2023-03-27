@@ -1,6 +1,6 @@
 import copy
 
-def imu_trans2pose ():
+def imu_trans2pose():
     pointpairs = [[{"stateEstimate.x": 0, "stateEstimate.y": 0, "stateEstimate.z": 0, "stateEstimate.roll": 0, "stateEstimate.pitch": 0, "stateEstimate.yaw": 0}, {"stateEstimate.x": 10, "stateEstimate.y": 5, "stateEstimate.z": 10, "stateEstimate.roll": 0.1, "stateEstimate.pitch": 0.2, "stateEstimate.yaw": 0.1}],
                   [{"stateEstimate.x": 0, "stateEstimate.y": 0, "stateEstimate.z": 0, "stateEstimate.roll": 0, "stateEstimate.pitch": 0, "stateEstimate.yaw": 0}, {"stateEstimate.x": 5, "stateEstimate.y": 10, "stateEstimate.z": 5, "stateEstimate.roll": 0.2, "stateEstimate.pitch": 0.1, "stateEstimate.yaw": 0.2}]]
     rvec = []
@@ -37,3 +37,6 @@ def imu_trans2pose ():
         cpose = copy.deepcopy(cpose)
 
     return poses
+
+pps = imu_trans2pose()
+print(pps)
