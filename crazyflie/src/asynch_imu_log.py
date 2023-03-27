@@ -21,7 +21,6 @@ logging.basicConfig(level=logging.ERROR)
 class logging:
 
     def __init__(self, logfile, scf, logconf):
-        self.fstream = open(logfile, "w")
         self.datadictlist = []
         self.cf = scf.cf
         self.logconf = logconf
@@ -29,10 +28,8 @@ class logging:
         self.logconf.data_received_cb.add_callback(self.log_stab_callback)
 
     def log_stab_callback(self, timestamp, data, logconf):
-        line = f"[{time.time()}][{timestamp}][{logconf.name}]: {data}\n"
-        print(data)
+        #print(data)
         #print('[%d][%d][%s]: %s' % (time.time(), timestamp, logconf.name, data))
-        #self.fstream.write(line)
         data["timestamp"] = time.time()
         self.datadictlist.append(data)
 

@@ -120,6 +120,8 @@ class urControl:
     def move_repeat(self):
         self.rtde_c.moveJ_IK(self.poses[self.repeat_counter], self.v, self.a, False)
         self.repeat_counter += 1
+        if self.repeat_counter == (len(self.poses)-1):
+            self.repeat_counter = 0 
 
 if __name__ == "__main__":
     ip = "172.31.1.200"
