@@ -1,9 +1,3 @@
-list = []
-hello = [1, 2, 4]
-list.append(hello)
-print((hello))
-hellocopy = hello.copy()
-hellocopy[0] = 10
-list.append(hellocopy)
-print((hellocopy))
+list = [1,2,3,4,5]
+del list[0]
 print(list)

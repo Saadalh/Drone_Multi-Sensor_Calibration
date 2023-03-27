@@ -2,13 +2,12 @@ import rtde_control as rtdec
 import rtde_receive as rtder
 import numpy as np
 import random
-import scipy
 import math
 import time
 
 class urControl:
 
-    def __init__(self, ip, v, a):
+    def __init__(self, ip, v, a, save):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
         self.rtde_r = rtder.RTDEReceiveInterface(ip)
@@ -16,6 +15,9 @@ class urControl:
         # Define the reference orientation for the TCP
         self.v = v
         self.a = a
+        self.save = save
+        self.poses = []
+        self.repeat_counter = 0
 
     def read_pose(self):
         # Read current pose of the TCP
@@ -88,19 +90,10 @@ class urControl:
         cap_target_vec = np.array([self.base_target_pose[0]-cap_pos_x, -(self.base_target_pose[1]-cap_pos_y), -(0.0065-cap_pos_z)])
         cap_target_vec = np.reshape(cap_target_vec, (1, -1))
 
-        # Define the reference vector and calculate the required rotation values
-        ref_vec = np.array([0, 0, 0.01])
-        ref_vec = np.reshape(ref_vec, (1, -1))
-        #cap_target_rotobj = scipy.spatial.transform.Rotation.align_vectors(cap_target_vec, ref_vec)
-        #cap_target_rotvec = cap_target_rotobj[0].as_euler('xy')
-        #print(f"Cap-Target-Rot: {cap_target_rotvec}")
-
-        # Move the TCP to the capture position
+        # Define the reference pose
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, 3.14, 0, 0]
-        #self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
-        #time.sleep(0.1)
 
-        # Get the pose of the TCP to point at the capture pose relative to base
+        # Get the orientation of the TCP to point at the capture pose relative to base
         yDist = cap_pos_y - self.base_target_pose[1]
         if yDist > 0:
             xAng = -(np.arctan((abs(yDist)/cap_pos_z)))
@@ -113,15 +106,20 @@ class urControl:
         else:
             yAng = (np.arctan((abs(xDist)/cap_pos_z)))
 
-        cap_target_rotobj_hm = scipy.spatial.transform.Rotation.from_euler('xy', [xAng, yAng])
-        cap_target_rotvec_hm = cap_target_rotobj_hm.as_rotvec()
-
-        #cap_target_pose_change = [0, 0, 0, cap_target_rotvec[0], cap_target_rotvec[1], 0]
         cap_target_pose_change = [0, 0, 0, xAng, yAng, 0]
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
-        # Orient the TCP to point at the target
+
+        # Save the pose for regeneration
+        if self.save:
+            self.poses.append(cap_target_pose)
+
+        # Move the TCP to the target pose
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
         time.sleep(0.1)
+
+    def move_repeat(self):
+        self.rtde_c.moveJ_IK(self.poses[self.repeat_counter], self.v, self.a, False)
+        self.repeat_counter += 1
 
 if __name__ == "__main__":
     ip = "172.31.1.200"
