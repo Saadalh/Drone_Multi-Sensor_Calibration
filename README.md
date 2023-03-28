@@ -28,3 +28,5 @@ The script should create/overwrite the following files:
 - "logs/camera2tcp_calibMat.txt": stores the calibration matrix between the drone camera and the UR TCP.
 - "logs/imu2camera_calibMat.txt": stores the calibration matrix between the drone IMU and the drone camera.
 - "logs/imu2tcp_calibMat.txt": stores the calibration martrix between the drone IMU and the UR TCP.
+
+All the poses are saved in the format of (tx, ty, tz, rx, ry, rz).
