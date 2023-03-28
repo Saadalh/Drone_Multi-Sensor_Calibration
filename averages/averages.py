@@ -1,9 +1,11 @@
 import numpy as np
+import math
 import copy
 import glob
 import os
 import re
 
+# Averages the poses of all repetitions
 def poses_average(ur_poses, repetitions):
     if repetitions != 1:
         seg_list = []
@@ -41,7 +43,8 @@ def poses_average(ur_poses, repetitions):
         return tot_avg_ur
     else:
         return ur_poses
-    
+
+# Picks the needed IMU poses from the log file based on the timestamps list
 def imu_poses_picker(imu_timestamps, imu_dict_list):
     # Get the wanted IMU poses
     picked_imu_posepairs = [] # a list for each station transformation
@@ -59,6 +62,7 @@ def imu_poses_picker(imu_timestamps, imu_dict_list):
 
     return picked_imu_posepairs
 
+# Transforms the imu pose-pairs to individual poses
 def imu_pairs2pose(posepairs):
     poses = []
     transformations = []
@@ -81,14 +85,15 @@ def imu_pairs2pose(posepairs):
         cpose[0] = cpose[0] + trans[0]
         cpose[1] = cpose[1] + trans[1]
         cpose[2] = cpose[2] + trans[2]
-        cpose[3] = cpose[3] + trans[3]
-        cpose[4] = cpose[4] + trans[4]
-        cpose[5] = cpose[5] + trans[5]
+        cpose[3] = math.radians(cpose[3] + trans[3]) # converts degrees to radians as well
+        cpose[4] = math.radians(cpose[4] + trans[4])
+        cpose[5] = math.radians(cpose[5] + trans[5])
         poses.append(cpose)
         cpose = copy.deepcopy(cpose)
 
     return poses
 
+# Pick the needed, and deletes the unwanted captures from the specified directory based on the timestamps list
 def captures_picker(dir_path, capture_timestamps):
     # Get the file names of the needed captures
     all_captures = glob.glob(f'{dir_path}/*.jpg')
@@ -123,6 +128,7 @@ def captures_picker(dir_path, capture_timestamps):
 
     return capture_files
 
+# sort_captures() support-fucntion to extract the number to-be-compared in the capture file name
 def get_capture_number(filename):
     # Extracts the capture number from the file name
     # Assumes the file name format is '/path/to/file/img_{capture_number}_timestamp.jpg'
@@ -132,6 +138,7 @@ def get_capture_number(filename):
     else:
         return -1
     
+# Sort the captures based on their names in ascending order
 def sort_captures(captures, repetitions):
     if repetitions != 1:
         sorted_splitted_captures = []
@@ -143,7 +150,8 @@ def sort_captures(captures, repetitions):
         return sorted_splitted_captures
     else:
         return captures
-    
+
+# Split the poses to lists for each repetition  
 def split_poses(poses):
     tvecs = []
     rvecs = []

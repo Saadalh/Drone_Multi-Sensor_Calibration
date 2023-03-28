@@ -7,7 +7,7 @@ import time
 
 class urControl:
 
-    def __init__(self, ip, v, a, save):
+    def __init__(self, ip, v, a):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
         self.rtde_r = rtder.RTDEReceiveInterface(ip)
@@ -15,7 +15,6 @@ class urControl:
         # Define the reference orientation for the TCP
         self.v = v
         self.a = a
-        self.save = save
         self.poses = []
         self.repeat_counter = 0
 
@@ -108,8 +107,7 @@ class urControl:
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
 
         # Save the pose for regeneration
-        if self.save:
-            self.poses.append(cap_target_pose)
+        self.poses.append(cap_target_pose)
 
         # Move the TCP to the target pose
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)

@@ -12,7 +12,6 @@ import cv2 as cv
 import threading
 import argparse
 import logging
-import glob
 import time
 import csv
 import os
@@ -22,17 +21,20 @@ if __name__ == "__main__":
     # Args for setting IP/port of AI-deck. Default settings are for when
     # AI-deck is in AP mode.
     parser = argparse.ArgumentParser(description='Connect to AI-deck JPEG streamer example')
-    parser.add_argument("-n",  default="192.168.4.1", metavar="dip", help="AI-deck IP")
-    parser.add_argument("-r", default="172.31.1.200", metavar="rip", help="Robot IP")
+    parser.add_argument("-n",  default="192.168.4.1", metavar="droneip", help="AI-deck IP")
+    parser.add_argument("-r", default="172.31.1.200", metavar="robotip", help="Robot IP")
     parser.add_argument("-p", type=int, default='5000', metavar="port", help="AI-deck port")
+    parser.add_argument("-t", type=int, default='20', metavar="stations", help="Number of stations in each repetition")
+    parser.add_argument("-e", type=int, default='1', metavar="repetitions", help="Number of repetition")
+    parser.add_argument("-v", type=float, default='0.3', metavar="velocity", help="Velocity of the UR")
+    parser.add_argument("-a", type=float, default='0.1', metavar="acceleration", help="Acceleration of the UR")
     parser.add_argument("-u", type=str, default='radio://0/100/2M/E7E7E7E701', metavar="uri", help="Radio-AP URI")
-    parser.add_argument('--unsave', action='store_false', help="Dont save streamed images")
     args = parser.parse_args()
 
     # Define robot-related parameters
     rob_ip = args.r
-    v = 0.30
-    a = 0.1
+    v = args.v
+    a = args.a
 
     # Create UR control object
     ur = urc.urControl(rob_ip, v, a)
@@ -55,13 +57,13 @@ if __name__ == "__main__":
 
     # Initialize log parameters
     logging.basicConfig(level=logging.ERROR)
-    lg_stab = LogConfig(name='Stabilizer', period_in_ms=10)
-    lg_stab.add_variable('stateEstimateZ.x', 'int16_t')
-    lg_stab.add_variable('stateEstimateZ.y', 'int16_t')
-    lg_stab.add_variable('stateEstimateZ.z', 'int16_t')
-    lg_stab.add_variable('stabilizer.roll', 'float')
-    lg_stab.add_variable('stabilizer.pitch', 'float')
-    lg_stab.add_variable('stabilizer.yaw', 'float')
+    lg_stab = LogConfig(name='stateEstimate', period_in_ms=10)
+    lg_stab.add_variable('stateEstimate.x', 'float')
+    lg_stab.add_variable('stateEstimate.y', 'float')
+    lg_stab.add_variable('stateEstimate.z', 'float')
+    lg_stab.add_variable('stateEstimate.roll', 'float')
+    lg_stab.add_variable('stateEstimate.pitch', 'float')
+    lg_stab.add_variable('stateEstimate.yaw', 'float')
 
     # Move to home pose where the calibration object needs to be place
     ur.move_home()
