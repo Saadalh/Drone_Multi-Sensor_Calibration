@@ -124,7 +124,6 @@ class charuco:
         tvecs = []
 
         for im in self.images:
-            pose = []
             # Open the image
             img = cv2.imread(im)
             # Detect marker corners
@@ -140,10 +139,9 @@ class charuco:
                     
                     rvec = np.array([_rvec[0],_rvec[1],_rvec[2]])
                     tvec = np.array([_tvec[0],_tvec[1],_tvec[2]])
+                    pose = [_rvec[0],_rvec[1],_rvec[2], _tvec[0],_tvec[1],_tvec[2]]
                     
-                    pose.append(tvec)
                     tvecs.append(tvec)
-                    pose.append(rvec)
                     rvecs.append(rvec)
                     poses.append(pose)
 
@@ -156,7 +154,7 @@ class charuco:
             img = cv2.resize(img, (int(img.shape[1]/self.proportion), int(img.shape[0]/self.proportion)))
             cv2.imshow("out", img)
             cv2.waitKey(0)
-        return poses, rvecs, tvecs
+        return poses
 
 if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))

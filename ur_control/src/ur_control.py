@@ -22,9 +22,7 @@ class urControl:
     def read_pose(self):
         # Read current pose of the TCP
         pose = self.rtde_r.getActualTCPPose()
-        rvec = np.array([pose[3],pose[4],pose[5]])
-        tvec = np.array([pose[0],pose[2],pose[3]])
-        return rvec, tvec
+        return pose
 
     def random_pose_generator(self):
         # Generate a random position based on the specified ranges

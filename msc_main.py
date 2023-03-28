@@ -1,6 +1,5 @@
 from intrinsics_calibration.src import charuco_intrinsics_calibration as charuco
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
-import crazyflie.src.imu_trans2pose as t2p
 import crazyflie.src.asynch_imu_log as imu 
 from cflib.crazyflie.log import LogConfig
 import ur_control.src.ur_control as urc
@@ -73,166 +72,143 @@ if __name__ == "__main__":
         logger.start_async_log() # start IMU logging
         stream_start_thread.start() # start camera streaming
 
-        imu_timestamps = [] # List of target IMU timestamps 
+        imu_timestamps = [] # List of target IMU timestamp pairs
 
         capture_timestamps = [] # List of target capture timestamps 
 
-        ur_poses = [] # List of TCP poses
-        tcp_rvecs = [] # List of TCP rot vectors
-        tcp_tvecs = [] # List of TCP trans vectors
-        ur_pose_labels = ["Translation Vector", "Rotation Vector"]
-        ur_poses.append(ur_pose_labels)
+        ur_poses = [] # List of TCP poses lists
 
-        repetitions = 1
+        repetitions = 1 # Number of repetitions of the same path
         stations = 10 # Number of stations of capture, imu, and aruco pose data collection
 
         for x in range(repetitions):
             ur.move_home()
             for i in range(stations):
-                # Timestamp array to save the start and end imu_timestamps in it
-                imu_pair = []
-                capture_timestamp = []
-                ur_pose = []
+                imu_pair = [] # saves the start and end imu_timestamps
+                capture_timestamp = [] # saves the capture_timestamps
+                ur_pose = [] # saves the TCP pose
                 # No need for IMU values when moving from home to first capture pose
                 if i == 0:
                     if x == 0:
-                        ur.move_target() # mimics previous movement
+                        ur.move_target() # moves to a random pose
                     else:
-                        ur.move_repeat() # move to random pose  
-                    robrvec, robtvec = ur.read_pose() # read the robot pose
+                        ur.move_repeat() # mimics movement from the original repetition  
+                    rob_pose = ur.read_pose() # reads the robot pose (list of 6)
                     time.sleep(0.5)
                     capture_timestamp.append(time.time()) # get the capture timestamp
                     time.sleep(0.2)
                     capture_timestamps.append(capture_timestamp) # append the capture timestamp
-                    ur_pose.append(robtvec) # create the pose pair
-                    ur_pose.append(robrvec)
-                    tcp_rvecs.append(robrvec) # append rotation part
-                    tcp_tvecs.append(robtvec) # append translation part
-                    ur_poses.append(ur_pose) # append the pose pair
+                    ur_poses.append(rob_pose) # append the robot pose
                 else:
                     # Move to a random position
-                    imu_pair.append(time.time()) # get the first imu timestamp
+                    imu_pair.append(time.time()) # get the start imu_timestamp
                     if x == 0:
                         ur.move_target()
                     else:
                         ur.move_repeat()
-                    imu_pair.append(time.time()) # get the second imu timestamp
+                    imu_pair.append(time.time()) # get the end imu_timestamp
                     time.sleep(0.5)
                     capture_timestamp.append(time.time())
                     time.sleep(0.2)
-                    robrvec, robtvec = ur.read_pose() # results in two np.array(1x3)
+                    rob_pose = ur.read_pose()
                     imu_timestamps.append(imu_pair) # append the imu pair
                     capture_timestamps.append(capture_timestamp) 
-                    ur_pose.append(robtvec)
-                    ur_pose.append(robrvec)
-                    tcp_rvecs.append(robrvec)
-                    tcp_tvecs.append(robtvec)
-                    ur_poses.append(ur_pose)
+                    ur_poses.append(rob_pose)
+            ur_poses.append(ur_poses)
 
-        imu_dict_list = logger.stop_async_log() # Each element is a dictionary of the 6 imu values
+        imu_dict_list = logger.stop_async_log() # returns the entire log file (list of 6-elements-dictionaries)
         stream_stop_thread.start()
         stream_stop_thread.join()
         stream_start_thread.join()
 
-    # Get the wanted IMU poses
-    stations_imu = [] # a list for each station transformation
-    for imutsp in imu_timestamps:
-        imutsp_list = [] # a list for each pose pair
-        for imuts in imutsp:
-            print(imuts)
-            timediff = 100
-            dummy_imu_dict = {} # a dictionary for each pose
-            for dict in imu_dict_list:
-                if abs(dict["timestamp"]-imuts) < timediff:
-                    timediff = abs(dict["timestamp"]-imuts)
-                    dummy_imu_dict = dict
-            imutsp_list.append(dummy_imu_dict)
-        stations_imu.append(imutsp_list)
+    # Average the robot poses
+    avg_ur_poses = avg.poses_average(ur_poses, repetitions) # returns a list of {stations} averaged ur poses (tx,ty,tz,rx,ry,rz)
+    # Save the average robot poses (m, radian)
+    with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
+        posewriter = csv.writer(f)
+        posewriter.writerows(avg_ur_poses) 
+
+    # Get the wanted IMU pose pairs from the log file
+    picked_imu_posepairs = avg.imu_poses_picker(imu_timestamps, imu_dict_list)
     # Create a pose reference and apply the imu transformations
-    imu_poses = t2p.imu_trans2pose(stations_imu)
-
-    # Calculate the IMU poses average
-    # Divide imu_poses into chunks
-    chunks = [imu_poses[i:i+repetitions] for i in range(0, len(imu_poses), repetitions)]
-
-    # Transpose the chunks
-    transposed_chunks = [[chunk[i] for chunk in chunks] for i in range(repetitions)]
-
-    # Calculate the average of each chunk
-    avg_imu_poses = []
-    for chunk in transposed_chunks:
-        avg_tx = sum([pose_list[0][0] for pose_list in chunk])/repetitions
-        avg_ty = sum([pose_list[0][1] for pose_list in chunk])/repetitions
-        avg_tz = sum([pose_list[0][2] for pose_list in chunk])/repetitions
-        avg_rx = sum([pose_list[1][0] for pose_list in chunk])/repetitions
-        avg_ry = sum([pose_list[1][1] for pose_list in chunk])/repetitions
-        avg_rz = sum([pose_list[1][2] for pose_list in chunk])/repetitions
-        avg_imu_poses.append([[avg_tx, avg_ty, avg_tz], [avg_rx, avg_ry, avg_rz]])
-
-    # Save the target IMU poses (m, degree)
+    imu_poses = avg.imu_pairs2pose(picked_imu_posepairs)
+    # Average the IMU poses
+    avg_imu_poses = avg.poses_average(imu_poses, repetitions)
+    # Save the average IMU poses (m, degree)
     with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
         imuwriter = csv.writer(f)
         imuwriter.writerows(avg_imu_poses)
 
-    # Get the robot poses average
-    avg_ur_poses = avg.ur_pose_average(ur_poses, repetitions)
-    # Save the robot poses (m, radian)
-    with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
-        posewriter = csv.writer(f)
-        posewriter.writerows(avg_ur_poses)
 
-    # Get the file names of the needed captures
-    all_captures = glob.glob(f'{dir_path}/logs/captures/*.jpg')
-    capture_files = []
-    for ts in capture_timestamps:
-        timediff = 10
-        for scap in all_captures:
-            caphead, captail = os.path.split(scap)
-            uscount = 0
-            dcount = 0
-            capts = ""
-            capnum = ""
-            for c in captail:
-                if c == ".":
-                    dcount += 1
-                if uscount == 2 and dcount < 2:
-                    capts += c 
-                if uscount == 1 and dcount == 0:
-                    capnum += c
-                if c == "_":
-                    uscount += 1
-            if abs(float(capts)-ts[0]) < timediff:
-                timediff = abs(float(capts)-ts[0])
-                wantedcapts = capts
-                wantedcapnum = capnum
-        capture_files.append(f"{dir_path}/logs/captures/img_{wantedcapnum}{wantedcapts}.jpg")
+    # Get the file names of the needed captures and  delete the rest
+    picked_capture_files = avg.captures_picker(f'{dir_path}/logs/captures', capture_timestamps)
+    # Sort and split the file names based on the number of repetitions
+    sorted_capture_files = avg.sort_captures(picked_capture_files, repetitions)
 
-    # Delete all unwanted capture files
-    for cfile in all_captures:
-        if cfile not in capture_files:
-            os.remove(cfile)
-
-    # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses
-    charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f"{dir_path}/logs/captures")
-    camMat, distCoef = charucoObj.intrinsicsCalibration()
-    charucoPoses, charuco_rvecs, charuco_tvecs = charucoObj.poseEstimation(camMat, distCoef) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
-
+    all_charuco_poses = [] # saves charuco poses of each repetition
+    for i in range(repetitions):
+        # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetition
+        if repetitions != 1:
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, sorted_capture_files[i])
+        else:
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, sorted_capture_files)
+        camMat, distCoef = charucoObj.intrinsicsCalibration()
+        charuco_poses = charucoObj.poseEstimation(camMat, distCoef) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
+        all_charuco_poses.append(charuco_poses)
+    # Average the charuco poses
+    avg_charuco_poses = avg.poses_average(all_charuco_poses)
     # Save the ChAruCo poses (m, radian)
     with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
-        posewriter.writerows(charucoPoses)
+        posewriter.writerows(avg_charuco_poses)
+
+    # Split all logs into rotation and translation np.arrays
+    # Split the robot poses
+    ur_tvecs, ur_rvecs = avg.split_poses(avg_ur_poses)
+    # Split the IMU poses
+    imu_tvecs, imu_rvecs = avg.split_poses(avg_imu_poses)
+    # Split the charuco poses
+    charuco_tvecs, charuco_rvecs = avg.split_poses(avg_charuco_poses)
 
     # Perform the hand-eye calibration to get X. (Camera to TCP)
-    r_X, t_X = cv.calibrateHandEye(tcp_rvecs, tcp_tvecs, charuco_rvecs, charuco_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
-    print(f"translation cam2grip, X, matrix: {t_X}")
+    r_X, t_X = cv.calibrateHandEye(ur_rvecs, ur_tvecs, charuco_rvecs, charuco_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
+    print(f"translation cam2tcp, X, matrix: {t_X}")
+    print(f"----------------------------------")
+    print(f"rotation cam2tcp, X, matrix: {r_X}")
     print(f"##################################")
-    print(f"rotation cam2grip, X, matrix: {r_X}")
-    print(f"##################################")
-    print(f"type of tcprvec: {type(tcp_rvecs[0])}")
-    print(f"type of charucorvec: {type(charuco_rvecs[0])}")
 
     # Save the X hand-eye calibration matrix
-    with open(f"{dir_path}/logs/gripper2camera_calibMat.txt", "w") as f:
+    with open(f"{dir_path}/logs/camera2tcp_calibMat.txt", "w") as f:
+        f.write("Translation:\n")
+        f.write(str(t_X))
+        f.write("\n")
+        f.write("Rotation:\n")
+        f.write(str(r_X))
+
+    # Perform the hand-eye calibration to get Y. (IMU to Camera)
+    r_Y, t_Y = cv.calibrateHandEye(charuco_rvecs, charuco_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
+    print(f"translation imu2cam, Y, matrix: {t_Y}")
+    print(f"----------------------------------")
+    print(f"rotation imu2cam, Y, matrix: {r_Y}")
+    print(f"##################################")
+
+    # Save the Y hand-eye calibration matrix
+    with open(f"{dir_path}/logs/imu2camera_calibMat.txt", "w") as f:
+        f.write("Translation:\n")
+        f.write(str(t_X))
+        f.write("\n")
+        f.write("Rotation:\n")
+        f.write(str(r_X))
+
+    # Perform the hand-eye calibration to get Z. (IMU to TCP)
+    r_Z, t_Z = cv.calibrateHandEye(ur_rvecs, ur_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
+    print(f"translation imu2tcp, Z, matrix: {t_Z}")
+    print(f"----------------------------------")
+    print(f"rotation imu2tcp, Z, matrix: {r_Z}")
+    print(f"##################################")
+
+    # Save the Y hand-eye calibration matrix
+    with open(f"{dir_path}/logs/imu2tcp_calibMat.txt", "w") as f:
         f.write("Translation:\n")
         f.write(str(t_X))
         f.write("\n")
