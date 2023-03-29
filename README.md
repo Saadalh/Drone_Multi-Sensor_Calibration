@@ -12,10 +12,10 @@ Following these steps, the hand-eye calibration could be executed:
 
 4) Run the msc_main.py script with the following parameters: 
    -n: Specifies the CrazyFlie AI-deck IP address, default=192.168.4.1
-   -r: Specifies the UR robot IP address, default=172.31.1.200
+   -i: Specifies the UR robot IP address, default=172.31.1.200
    -p: Specifies the port of the CrazyFlie AI-Deck, default=5000
-   -t: Specifies the number of stations each repetition has, default=20
-   -e: Specifies the number of repetitions of the generated stations, default=1 (no repetition)
+   -s: Specifies the number of stations each repetition has, default=20
+   -r: Specifies the number of repetitions of the generated stations, default=1 (no repetition)
    -v: Specifies the velocity of the robot arm, default=0.3
    -a: Specifies the acceleration of the robot arm, default=0.1
    -u: Specifies the CrazyFlie radio-AP URI, default=radio://0/100/2M/E7E7E7E701
