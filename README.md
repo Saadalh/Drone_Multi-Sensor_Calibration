@@ -10,6 +10,10 @@ Following these steps, the hand-eye calibration could be executed:
 
 3) Install the Universal Robots RTDE python library to enable communication with the UR.
 
+4) Turn on the CrazyFlie, and connect to its WiFi network.
+
+5) Attach the drone the the UR via a Robotiq HandE gripper using the provided interface. Or print a custom interface that fits the availabe gripper.
+
 4) Run the msc_main.py script with the following parameters: 
    -n: Specifies the CrazyFlie AI-deck IP address, default=192.168.4.1
    -i: Specifies the UR robot IP address, default=172.31.1.200
