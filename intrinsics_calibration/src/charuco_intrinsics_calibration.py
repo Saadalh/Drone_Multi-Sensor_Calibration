@@ -5,7 +5,8 @@ import cv2
 import os
 
 class charuco:
-    def __init__(self, x_count, y_count, square_len, marker_len, dir_path):
+    def __init__(self, x_count, y_count, square_len, marker_len, dpath, captures):
+        print(len(captures))
         # ChAruco board variables
         self.CHESSBOARD_X_COUNT = x_count
         self.CHESSBOARD_Y_COUNT = y_count
@@ -26,8 +27,8 @@ class charuco:
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
         # All images used should be the same size, which if taken with the same camera shouldn't be a problem
-        self.dir_path = dir_path
-        self.images = glob.glob(f'{self.dir_path}/*.jpg')
+        self.dir_path = dpath
+        self.images = captures
 
     def intrinsicsCalibration(self):
         # Create the arrays and variables we'll use to store info like corners and IDs from images processed
@@ -38,6 +39,7 @@ class charuco:
         
         # Loop through images glob'ed
         for im in self.images:
+            print(im)
             # Open the image
             img = cv2.imread(im)
             # Grayscale the image

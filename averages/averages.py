@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 import math
 import copy
 import glob
@@ -6,17 +7,16 @@ import os
 import re
 
 # Averages the poses of all repetitions
-def poses_average(ur_poses, repetitions):
+def poses_average(ur_poses, repetitions): # len(urposes) =  6 , rep = 2, parts = 3, len(seglist) = 2, len(seglist[0]) = 3
     if repetitions != 1:
         seg_list = []
         parts = int(len(ur_poses)/repetitions)
         for i in range(repetitions):
-            newlist = ur_poses[0:parts]
+            newlist = ur_poses[0:(parts)]
             seg_list.append(newlist)
-            del ur_poses[0:2]
-            
+            del ur_poses[0:(parts)]
         tot_avg_ur = []
-        for x in range(len(seg_list[0])):
+        for x in range(parts):
             avg_ur = []
             tx_tot = 0
             ty_tot = 0
@@ -24,7 +24,7 @@ def poses_average(ur_poses, repetitions):
             rx_tot = 0
             ry_tot = 0
             rz_tot = 0
-            for i in range(len(seg_list)):
+            for i in range(repetitions):
                 tx_tot += seg_list[i][x][0] 
                 ty_tot += seg_list[i][x][1] 
                 tz_tot += seg_list[i][x][2] 
@@ -63,7 +63,7 @@ def imu_poses_picker(imu_timestamps, imu_dict_list):
     return picked_imu_posepairs
 
 # Transforms the imu pose-pairs to individual poses
-def imu_pairs2pose(posepairs):
+def imu_pairs2pose(posepairs, repetitions, stations):
     poses = []
     transformations = []
     for pair in posepairs:
@@ -75,13 +75,14 @@ def imu_pairs2pose(posepairs):
         trans.append(pair[1]["stateEstimate.pitch"] - pair[0]["stateEstimate.pitch"])
         trans.append(pair[1]["stateEstimate.yaw"] - pair[0]["stateEstimate.yaw"])
         transformations.append(trans)
-    print(transformations)
 
     ivec = [0, 0, 0, 0, 0, 0]
     poses.append(ivec)
     cpose = copy.deepcopy(ivec)
 
     for trans in transformations:
+        if repetitions > 1 and (len(poses)%stations==0):
+            poses.append(ivec)
         cpose[0] = cpose[0] + trans[0]
         cpose[1] = cpose[1] + trans[1]
         cpose[2] = cpose[2] + trans[2]
@@ -89,7 +90,7 @@ def imu_pairs2pose(posepairs):
         cpose[4] = math.radians(cpose[4] + trans[4])
         cpose[5] = math.radians(cpose[5] + trans[5])
         poses.append(cpose)
-        cpose = copy.deepcopy(cpose)
+        cpose = copy.deepcopy(cpose)        
 
     return poses
 
@@ -115,11 +116,11 @@ def captures_picker(dir_path, capture_timestamps):
                     capnum += c
                 if c == "_":
                     uscount += 1
-            if abs(float(capts)-ts[0]) < timediff:
-                timediff = abs(float(capts)-ts[0])
+            if abs(float(capts)-ts) < timediff:
+                timediff = abs(float(capts)-ts)
                 wantedcapts = capts
                 wantedcapnum = capnum
-        capture_files.append(f"{dir_path}/logs/captures/img_{wantedcapnum}{wantedcapts}.jpg")
+        capture_files.append(f"{dir_path}/img_{wantedcapnum}{wantedcapts}.jpg")
 
     # Delete all unwanted capture files
     for cfile in all_captures:
@@ -140,22 +141,24 @@ def get_capture_number(filename):
     
 # Sort the captures based on their names in ascending order
 def sort_captures(captures, repetitions):
+    caps = captures
     if repetitions != 1:
         sorted_splitted_captures = []
-        sorted_captures = sorted(captures, key=get_capture_number)
+        sorted_captures = sorted(caps, key=get_capture_number)
         elements = int(len(sorted_captures)/repetitions)
         for i in range(repetitions):
             sorted_splitted_captures.append(sorted_captures[0:elements])
             del sorted_captures[0:elements]
         return sorted_splitted_captures
     else:
-        return captures
+        return caps
 
 # Split the poses to lists for each repetition  
 def split_poses(poses):
     tvecs = []
     rvecs = []
-    for pose in range(len(poses)):
+    for pose in poses:
+        #error herre
         tvec = np.array([pose[0], pose[1], pose[2]])
         rvec = np.array([pose[3], pose[4], pose[5]])
         tvecs.append(tvec)
