@@ -53,6 +53,27 @@ parser.add_argument("-p", type=int, default='5000', metavar="port", help="AI-dec
 parser.add_argument('--save', action='store_true', help="Save streamed images")
 args = parser.parse_args()
 
+class Webcam():
+    def __init__(self, port, dir_path):
+        self.cap = cv2.VideoCapture(port)
+        self.dir_path = dir_path
+        self.streaming = True
+    
+    def stream(self):
+        while self.streaming == True:
+            _, self.frame = self.cap.read()
+            cv2.imshow("stream", self.frame)
+            cv2.waitKey(1)
+            
+    def save_capture(self, repetition, station):
+        self.repetition = repetition
+        self.station = station
+        cv2.imwrite(f"{self.dir_path}/capture_{self.repetition}{self.station}.jpg", self.frame)
+
+    def stop_stream(self):
+        self.streaming = False
+
+
 class Camera():
     imgdata = None
     data_buffer = bytearray()

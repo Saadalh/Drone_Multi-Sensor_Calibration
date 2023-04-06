@@ -7,6 +7,9 @@ import time
 
 class urControl:
 
+    base_target_pose = [-0.338, -0.096, 0.133, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
+    system_target_poses = []
+
     def __init__(self, ip, v, a):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
@@ -17,6 +20,17 @@ class urControl:
         self.a = a
         self.poses = []
         self.repeat_counter = 0
+        self.cspose = 0
+
+        for i in range(3):
+            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]-0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]-0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
 
     def read_pose(self):
         # Read current pose of the TCP
@@ -27,61 +41,22 @@ class urControl:
         # Generate a random position based on the specified ranges. Ranges can be changed based on the current setup
         ranpos_x = round(random.uniform(-0.500, -0.300), 4)
         ranpos_y = round(random.uniform(-0.350, 0), 4)
-        ranpos_z = round(random.uniform(0.350, 0.400), 4)
+        ranpos_z = round(random.uniform(0.447, 0.450), 4)
 
         return ranpos_x, ranpos_y, ranpos_z
-    
-    def systematic_pose_generator(pose, numbers, layers, factor, increase):
-
-        poses = np.empty((layers, numbers, 6))
-
-        # Define variabels
-        trans = 80 # distance between the levels -> change the distances for your usecase
-
-        rot = 10 # angle for the tilt of the camera -> change the tilt for your usecase
-
-        for n in range(layers):
-            multiplierT = factor + (increase*n)
-
-            multiplierR = factor + (increase*(0.25*n))
-
-            for i in range(numbers):
-
-                ########
-
-                # Program it as a 4x4 Matrix and use the translation vectors to rotate the robot arm
-
-                # Defeinieren eines Roatationsvektor und eines Translationsvektor
-
-                ########
-
-                #print("n: " + str(n))
-
-                poses[n][i][0] = pose[0]+(multiplierT*trans*(math.sin(math.radians((360/numbers)*i))))
-
-                poses[n][i][1] = pose[1]+ trans*(n+1) #mutliplierT
-
-                poses[n][i][2] = pose[2]+(multiplierT*trans*(math.cos(math.radians((360/numbers)*i))))
-
-                poses[n][i][3] = pose[3]+math.sin(math.radians(rot*multiplierR))*(math.cos(math.radians((360/numbers)*i)))
-
-                poses[n][i][4] = pose[4]+math.sin(math.radians(rot*multiplierR))*-(math.sin(math.radians((360/numbers)*i)))#+(rot*cos((360/numbers)*i))
-
-                poses[n][i][5] = pose[5]
-
-        #print("Positionen: "+ str(poses))
-
-        return poses
 
     def move_home(self):
         # Move the TCP to the point where the calibration object needs to be place
-        self.base_target_pose = [-0.443, -0.2244, 0.134, 2.231, -2.211, 0] # the home pose, can be changed depending on the current setup
         self.rtde_c.moveJ_IK(self.base_target_pose, self.v, self.a, False)
         time.sleep(0.5)
 
-    def move_target(self):
+    def move_target(self, type):
+
         # Generate random capture position
-        cap_pos_x, cap_pos_y, cap_pos_z = self.random_pose_generator()
+        if type == 'random':
+            cap_pos_x, cap_pos_y, cap_pos_z = self.random_pose_generator()
+        elif type == 'sys':
+            cap_pos_x, cap_pos_y, cap_pos_z = self.sys_pose_generator()
 
         # Calculate the vector from the TCP to the target
         #cap_target_vec = np.array([self.base_target_pose[0]-cap_pos_x, -(self.base_target_pose[1]-cap_pos_y), -(0.0065-cap_pos_z)])
@@ -91,17 +66,17 @@ class urControl:
         cap_target_pose = [cap_pos_x, cap_pos_y, cap_pos_z, self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]]
 
         # Get the orientation of the TCP to point at the capture pose relative to base
-        yDist = cap_pos_y - self.base_target_pose[1]
+        yDist = cap_pos_y - self.base_target_pose[1] # tcp to the left of the object
         if yDist > 0:
-            yAng = np.arctan((abs(yDist)/cap_pos_z))
+            xAng = np.arctan((abs(yDist)/cap_pos_z))
         else:
-            yAng = -(np.arctan((abs(yDist)/cap_pos_z)))
+            xAng = -(np.arctan((abs(yDist)/cap_pos_z)))
 
-        xDist = cap_pos_x - self.base_target_pose[0]
+        xDist = cap_pos_x - self.base_target_pose[0] # tcp is behind the object
         if xDist > 0:
-            xAng = -(np.arctan((abs(xDist)/cap_pos_z)))
+            yAng = (np.arctan((abs(xDist)/cap_pos_z)))
         else:
-            xAng = np.arctan((abs(xDist)/cap_pos_z))
+            yAng = -(np.arctan((abs(xDist)/cap_pos_z)))
 
         cap_target_pose_change = [0, 0, 0, xAng, yAng, 0]
         cap_target_pose = self.rtde_c.poseTrans(cap_target_pose, cap_target_pose_change)
@@ -112,6 +87,14 @@ class urControl:
         # Move the TCP to the target pose
         self.rtde_c.moveJ_IK(cap_target_pose, self.v, self.a, False)
         time.sleep(0.1)
+
+    def sys_pose_generator(self):
+        print(f"pose #{self.cspose+1}")
+        x = self.system_target_poses[self.cspose][0]
+        y = self.system_target_poses[self.cspose][1]
+        z = self.system_target_poses[self.cspose][2]
+        self.cspose += 1
+        return x, y, z
 
     def move_repeat(self):
         self.rtde_c.moveJ_IK(self.poses[self.repeat_counter], self.v, self.a, False)
@@ -125,7 +108,8 @@ if __name__ == "__main__":
     a = 0.1
 
     urc = urControl(ip, v, a)
+    #print(urc.read_pose())
     urc.move_home()
-    urc.move_target()
-    urc.move_target()
-    urc.move_home()
+    #urc.move_target()
+    #urc.move_target()
+    #urc.move_home()

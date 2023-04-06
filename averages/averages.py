@@ -1,5 +1,6 @@
+from scipy.spatial.transform import Rotation as R
 import numpy as np
-import scipy
+from cv2 import Rodrigues
 import math
 import copy
 import glob
@@ -68,29 +69,52 @@ def imu_pairs2pose(posepairs, repetitions, stations):
     transformations = []
     for pair in posepairs:
         trans = []
+
         trans.append(pair[1]["stateEstimate.x"] - pair[0]["stateEstimate.x"])
         trans.append(pair[1]["stateEstimate.y"] - pair[0]["stateEstimate.y"])
         trans.append(pair[1]["stateEstimate.z"] - pair[0]["stateEstimate.z"])
-        trans.append(pair[1]["stateEstimate.roll"] - pair[0]["stateEstimate.roll"])
-        trans.append(pair[1]["stateEstimate.pitch"] - pair[0]["stateEstimate.pitch"])
-        trans.append(pair[1]["stateEstimate.yaw"] - pair[0]["stateEstimate.yaw"])
+
+        r0 = R.from_euler('xyz', [pair[0]["stateEstimate.roll"], pair[0]["stateEstimate.pitch"], pair[0]["stateEstimate.yaw"]], degrees=True)
+        r1 = R.from_euler('xyz', [pair[1]["stateEstimate.roll"], pair[1]["stateEstimate.pitch"], pair[1]["stateEstimate.yaw"]], degrees=True)
+        r01 = np.matmul(np.linalg.inv(r0.as_matrix()), r1.as_matrix())
+        r01 = R.from_matrix(r01.tolist())
+        trans.append(r01) # results in a transformation in the following format: (tx,ty,tz,3x3rotmat)
+        
         transformations.append(trans)
 
-    ivec = [0, 0, 0, 0, 0, 0]
-    poses.append(ivec)
-    cpose = copy.deepcopy(ivec)
+    irot = R.from_matrix([[1,0,0],[0,1,0],[0,0,1]])
+    ipose = [0, 0, 0, irot]
+    cpose = copy.deepcopy(ipose)
+    npose = copy.deepcopy(ipose)
+    npose.append(0)
+    npose.append(0)
 
     for trans in transformations:
-        if repetitions > 1 and (len(poses)%stations==0):
-            poses.append(ivec)
-        cpose[0] = cpose[0] + trans[0]
-        cpose[1] = cpose[1] + trans[1]
-        cpose[2] = cpose[2] + trans[2]
-        cpose[3] = math.radians(cpose[3] + trans[3]) # converts degrees to radians as well
-        cpose[4] = math.radians(cpose[4] + trans[4])
-        cpose[5] = math.radians(cpose[5] + trans[5])
-        poses.append(cpose)
-        cpose = copy.deepcopy(cpose)        
+        if (len(poses)%stations==0):
+            npose[0] = 0
+            npose[1] = 0
+            npose[2] = 0
+            npose[3] = 0
+            npose[4] = 0
+            npose[5] = 0
+            poses.append(copy.deepcopy(npose))
+        npose[0] = cpose[0] + trans[0]
+        npose[1] = cpose[1] + trans[1]
+        npose[2] = cpose[2] + trans[2]
+
+        crot = R.from_matrix(np.matmul(cpose[3].as_matrix(), trans[3].as_matrix())) 
+
+        npose[3] = crot.as_euler('xyz')[0]
+        npose[4] = crot.as_euler('xyz')[1]
+        npose[5] = crot.as_euler('xyz')[2]
+
+        poses.append(copy.deepcopy(npose))
+
+        cpose = copy.deepcopy(npose)        
+
+        cpose.pop(-1)
+        cpose.pop(-1)
+        cpose[3] = crot
 
     return poses
 
@@ -158,10 +182,9 @@ def split_poses(poses):
     tvecs = []
     rvecs = []
     for pose in poses:
-        #error herre
         tvec = np.array([pose[0], pose[1], pose[2]])
-        rvec = np.array([pose[3], pose[4], pose[5]])
+        rotvec = R.from_rotvec([pose[3], pose[4], pose[5]])
+        rodvec = Rodrigues(rotvec.as_matrix())
         tvecs.append(tvec)
-        rvecs.append(rvec)
-    
+        rvecs.append(rodvec[0])    
     return tvecs, rvecs

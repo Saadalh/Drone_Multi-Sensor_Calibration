@@ -120,8 +120,7 @@ class charuco:
 
         return cameraMatrix, distCoeffs
 
-    def poseEstimation(self, cameraMatrix, distCoeffs):
-        poses = []
+    def poseEstimation(self, cameraMatrix, distCoeffs, charuco_poses):
         rvecs = []
         tvecs = []
 
@@ -141,22 +140,19 @@ class charuco:
                     
                     rvec = np.array([_rvec[0],_rvec[1],_rvec[2]])
                     tvec = np.array([_tvec[0],_tvec[1],_tvec[2]])
-                    pose = [_rvec[0],_rvec[1],_rvec[2], _tvec[0],_tvec[1],_tvec[2]]
+#                    pose = np.array([_rvec[0],_rvec[1],_rvec[2], _tvec[0],_tvec[1],_tvec[2]])
+                    pose = [float(_rvec[0]), float(_rvec[1]), float(_rvec[2]), float(_tvec[0]), float(_tvec[1]), float(_tvec[2])]
                     
                     tvecs.append(tvec)
                     rvecs.append(rvec)
-                    poses.append(pose)
+                    charuco_poses.append(pose)
 
                     if retval == True:
                         cv2.drawFrameAxes(img, cameraMatrix, distCoeffs, rvec, tvec, 0.1)
 
-            print(f"retval: {retval}")
-            print(f"rvec: {rvec}")
-            print(f"tvec: {tvec}")
             img = cv2.resize(img, (int(img.shape[1]/self.proportion), int(img.shape[0]/self.proportion)))
             cv2.imshow("out", img)
             cv2.waitKey(0)
-        return poses
 
 if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))
