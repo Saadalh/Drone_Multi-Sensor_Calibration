@@ -66,9 +66,7 @@ class Webcam():
             cv2.waitKey(1)
             
     def save_capture(self, repetition, station):
-        self.repetition = repetition
-        self.station = station
-        cv2.imwrite(f"{self.dir_path}/capture_{self.repetition}{self.station}.jpg", self.frame)
+        cv2.imwrite(f"{self.dir_path}/capture_{repetition}{station}.jpg", self.frame)
 
     def stop_stream(self):
         self.streaming = False
@@ -82,6 +80,7 @@ class Camera():
     def __init__(self, deck_ip, deck_port, dpath):
         self.start = time.time()
         self.dpath = dpath
+        self.cap_list = []
 
         print("Connecting to socket on {}:{}...".format(deck_ip, deck_port))
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -96,7 +95,7 @@ class Camera():
 
     def start_stream(self):
         print("Stream started.")
-        count = 0
+        self.count = 0
         while(self.stream):
             # First get the info
             packetInfoRaw = self.rx_bytes(4)
@@ -127,17 +126,17 @@ class Camera():
                     chunk = self.rx_bytes(length - 2)
                     imgStream.extend(chunk)
                 
-                count = count + 1
-                print(count)
-                meanTimePerImage = (time.time()-self.start) / count
+                self.count = self.count + 1
+                print(self.count)
+                meanTimePerImage = (time.time()-self.start) / self.count
                 print("{}".format(meanTimePerImage))
                 print("{}".format(1/meanTimePerImage))
 
                 if format == 0:
-                    bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
-                    bayer_img.shape = (244, 324)
-                    #cv2.imshow('Raw', bayer_img)
-                    cv2.imwrite(f"{self.dpath}/img_{count:06d}_{time.time()}.jpg", bayer_img)
+                    self.bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
+                    self.bayer_img.shape = (244, 324)
+                    #cv2.imshow('Raw', self.bayer_img)
+                    #cv2.imwrite(f"{self.dpath}/img_{self.count:06d}_{time.time()}.jpg", self.bayer_img)
                     #cv2.waitKey(1)
                 else:
                     with open("img.jpeg", "wb") as f:
@@ -151,6 +150,13 @@ class Camera():
 
     def stop_stream(self):
         self.stream = False
+
+    def save_capture(self):
+        cv2.imwrite(f"{self.dpath}/img_{self.count:06d}.jpg", self.bayer_img)
+        self.cap_list.append(f"{self.dpath}/img_{self.count:06d}.jpg")
+
+    def get_caplist(self):
+        return self.cap_list
 
 if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))

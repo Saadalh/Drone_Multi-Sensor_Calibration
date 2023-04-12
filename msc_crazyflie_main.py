@@ -43,58 +43,50 @@ if __name__ == "__main__":
     #cflib.crtp.init_drivers()
 
     # cfRadio, cfWiFi connection, and Path variables
-    #deck_port = args.p
-    #deck_ip = args.n
+    deck_port = args.p
+    deck_ip = args.n
     dir_path = os.path.realpath(os.path.dirname(__file__))
-    #logfile = f"{dir_path}/logs/imu_log.txt"
-    #uri_add = args.u
-    #uri = uri_helper.uri_from_env(default=uri_add)
+    logfile = f"{dir_path}/logs/imu_log.txt"
+    uri_add = args.u
+    uri = uri_helper.uri_from_env(default=uri_add)
 
     # Connect to crazyflie and initialize the client socket
-    #cfCam = cap.Camera(deck_ip, deck_port, f"{dir_path}/logs/captures")
-    #stream_start_thread = threading.Thread(target=cfCam.start_stream)
-    #stream_stop_thread = threading.Thread(target=cfCam.stop_stream)
+    cfCam = cap.Camera(deck_ip, deck_port, f"{dir_path}/logs/captures")
+    stream_start_thread = threading.Thread(target=cfCam.start_stream)
+    stream_stop_thread = threading.Thread(target=cfCam.stop_stream)
 
     # Initialize log parameters
-    #logging.basicConfig(level=logging.ERROR)
-    #lg_stab = LogConfig(name='stateEstimate', period_in_ms=10)
-    #lg_stab.add_variable('stateEstimate.x', 'float')
-    #lg_stab.add_variable('stateEstimate.y', 'float')
-    #lg_stab.add_variable('stateEstimate.z', 'float')
-    #lg_stab.add_variable('stateEstimate.roll', 'float')
-    #lg_stab.add_variable('stateEstimate.pitch', 'float')
-    #lg_stab.add_variable('stateEstimate.yaw', 'float')
-
-    # Initialize the webcam object
-    wc = cap.Webcam(2, f"{dir_path}/logs/captures")
-    wcstream_start_thread = threading.Thread(target=wc.stream)
-    wcstream_start_thread.start()
+    logging.basicConfig(level=logging.ERROR)
+    lg_stab = LogConfig(name='stateEstimate', period_in_ms=10)
+    lg_stab.add_variable('stateEstimate.x', 'float')
+    lg_stab.add_variable('stateEstimate.y', 'float')
+    lg_stab.add_variable('stateEstimate.z', 'float')
+    lg_stab.add_variable('stateEstimate.roll', 'float')
+    lg_stab.add_variable('stateEstimate.pitch', 'float')
+    lg_stab.add_variable('stateEstimate.yaw', 'float')
 
     # Move to home pose where the calibration object needs to be place
     ur.move_home()
     input("Place the ChAruCo board under the drone. Then press Enter.")
 
-    for i in range(1):
-    #with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
-        #logger = imu.logging(logfile, scf, lg_stab)
-        #logger.start_async_log() # start IMU logging
-        #stream_start_thread.start() # start camera streaming
+    with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
+        logger = imu.logging(logfile, scf, lg_stab)
+        logger.start_async_log() # start IMU logging
+        stream_start_thread.start() # start camera streaming
 
-        #imu_timestamps = [] # List of target IMU timestamp pairs
+        imu_timestamps = [] # List of target IMU timestamp pairs
 
         #capture_timestamps = [] # List of target capture timestamps 
 
         ur_poses = [] # List of TCP poses lists
-        all_captures = []
 
         repetitions = args.e # Number of repetitions of the same path
         stations = args.s # Number of stations of capture, imu, and aruco pose data collection
 
         for x in range(repetitions):
             ur.move_home()
-            captures = []
             for i in range(stations):
-                #imu_pair = [] # saves the start and end imu_timestamps
+                imu_pair = [] # saves the start and end imu_timestamps
                 ur_pose = [] # saves the TCP pose
                 # No need for IMU values when moving from home to first capture pose
                 if i == 0:
@@ -104,39 +96,28 @@ if __name__ == "__main__":
                         ur.move_repeat() # mimics movement from the original repetition  
                     rob_pose = ur.read_pose() # reads the robot pose (list of 6)
                     time.sleep(0.5)
-                    #capture_timestamps.append(time.time()) # get the capture timestamp
-                    #_, capture = cap.read()
-                    wc.save_capture(x, i+1)
+                    cfCam.save_capture() # saves the current frame
                     time.sleep(0.2)
                     ur_poses.append(rob_pose) # append the robot pose
-                    #cv.imwrite(f"{dir_path}/logs/captures/capture_{x}{i}.jpg", capture)
-                    captures.append(f"{dir_path}/logs/captures/capture_{x}{i+1}.jpg")
                 else:
                     # Move to a random position
-                    #imu_pair.append(time.time()) # get the start imu_timestamp
+                    imu_pair.append(time.time()) # get the start imu_timestamp
                     if x == 0:
                         ur.move_target('sys')
                     else:
                         ur.move_repeat()
-                    #imu_pair.append(time.time()) # get the end imu_timestamp
+                    imu_pair.append(time.time()) # get the end imu_timestamp
                     time.sleep(0.5)
-                    #capture_timestamps.append(time.time())
-                    #_, capture = cap.read()
-                    wc.save_capture(x, i+1)
+                    cfCam.save_capture()
                     time.sleep(0.2)
                     rob_pose = ur.read_pose()
-                    #imu_timestamps.append(imu_pair) # append the imu pair
+                    imu_timestamps.append(imu_pair) # append the imu pair
                     ur_poses.append(rob_pose)
-                    #cv.imwrite(f"{dir_path}/logs/captures/capture_{x}{i}.jpg", capture)
-                    captures.append(f"{dir_path}/logs/captures/capture_{x}{i}.jpg")
-            all_captures.append(captures)
 
-        #imu_dict_list = logger.stop_async_log() # returns the entire log file (list of 6-elements-dictionaries)
-        #stream_stop_thread.start()
-        #stream_stop_thread.join()
-        #stream_start_thread.join()
-        wc.stop_stream()
-        wcstream_start_thread.join()
+        imu_dict_list = logger.stop_async_log() # returns the entire log file (list of 6-elements-dictionaries)
+        stream_stop_thread.start()
+        stream_stop_thread.join()
+        stream_start_thread.join()
 
     # Average the robot poses
     avg_ur_poses = avg.poses_average(ur_poses, repetitions) # returns a list of {stations} averaged ur poses (tx,ty,tz,rx,ry,rz)
@@ -147,30 +128,30 @@ if __name__ == "__main__":
         print("robot_poses.csv is created")
 
     # Get the wanted IMU pose pairs from the log file
-    #picked_imu_posepairs = avg.imu_poses_picker(imu_timestamps, imu_dict_list)
+    picked_imu_posepairs = avg.imu_poses_picker(imu_timestamps, imu_dict_list)
     # Create a pose reference and apply the imu transformations
-    #imu_poses = avg.imu_pairs2pose(picked_imu_posepairs, repetitions, stations)
+    imu_poses = avg.imu_pairs2pose(picked_imu_posepairs, repetitions, stations)
     # Average the IMU poses
-    #avg_imu_poses = avg.poses_average(imu_poses, repetitions)
+    avg_imu_poses = avg.poses_average(imu_poses, repetitions)
     # Save the average IMU poses (m, degree)
-    #with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
-        #imuwriter = csv.writer(f)
-        #imuwriter.writerows(avg_imu_poses)
-        #print("imu_poses.csv is created")
+    with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
+        imuwriter = csv.writer(f)
+        imuwriter.writerows(avg_imu_poses)
+        print("imu_poses.csv is created")
     #print(avg_imu_poses)
 
     # Get the file names of the needed captures and  delete the rest
     #picked_capture_files = avg.captures_picker(f'{dir_path}/logs/captures', capture_timestamps)
     # Sort and split the file names based on the number of repetitions
-    #sorted_capture_files = avg.sort_captures(picked_capture_files, repetitions)
+    sorted_capture_files = avg.sort_captures(cfCam.get_caplist(), repetitions)
 
     charuco_poses = [] # saves charuco poses of each repetition
     for i in range(repetitions):
         # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetition
         if repetitions == 1:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', captures)
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', sorted_capture_files)
         else:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', captures[i])
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', sorted_capture_files[i])
         camMat, distCoef = charucoObj.intrinsicsCalibration()
         charucoObj.poseEstimation(camMat, distCoef, charuco_poses) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
     # Average the charuco poses
@@ -185,7 +166,7 @@ if __name__ == "__main__":
     # Split the robot poses
     ur_tvecs, ur_rvecs = avg.split_poses(avg_ur_poses)
     # Split the IMU poses
-    #imu_tvecs, imu_rvecs = avg.split_poses(avg_imu_poses)
+    imu_tvecs, imu_rvecs = avg.split_poses(avg_imu_poses)
     # Split the charuco poses
     charuco_tvecs, charuco_rvecs = avg.split_poses(avg_charuco_poses)
 
@@ -204,29 +185,29 @@ if __name__ == "__main__":
         f.write(str(r_X))
 
     # Perform the hand-eye calibration to get Y. (IMU to Camera)
-    #r_Y, t_Y = cv.calibrateHandEye(charuco_rvecs, charuco_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
-    #print(f"translation imu2cam, Y, matrix: \n{t_Y}")
-    #print(f"----------------------------------")
-    #print(f"rotation imu2cam, Y, matrix: \n{r_Y}")
+    r_Y, t_Y = cv.calibrateHandEye(charuco_rvecs, charuco_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
+    print(f"translation imu2cam, Y, matrix: \n{t_Y}")
+    print(f"----------------------------------")
+    print(f"rotation imu2cam, Y, matrix: \n{r_Y}")
 
     # Save the Y hand-eye calibration matrix
-    #with open(f"{dir_path}/logs/imu2camera_calibMat.txt", "w") as f:
-        #f.write("Translation:\n")
-        #f.write(str(t_Y))
-        #f.write("\n")
-        #f.write("Rotation:\n")
-        #f.write(str(r_Y))
+    with open(f"{dir_path}/logs/imu2camera_calibMat.txt", "w") as f:
+        f.write("Translation:\n")
+        f.write(str(t_Y))
+        f.write("\n")
+        f.write("Rotation:\n")
+        f.write(str(r_Y))
 
     # Perform the hand-eye calibration to get Z. (IMU to TCP)
-    #r_Z, t_Z = cv.calibrateHandEye(ur_rvecs, ur_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
-    #print(f"translation imu2tcp, Z, matrix: \n{t_Z}")
-    #print(f"----------------------------------")
-    #print(f"rotation imu2tcp, Z, matrix: \n{r_Z}")
+    r_Z, t_Z = cv.calibrateHandEye(ur_rvecs, ur_tvecs, imu_rvecs, imu_tvecs, method=cv.CALIB_HAND_EYE_TSAI)
+    print(f"translation imu2tcp, Z, matrix: \n{t_Z}")
+    print(f"----------------------------------")
+    print(f"rotation imu2tcp, Z, matrix: \n{r_Z}")
 
     # Save the Y hand-eye calibration matrix
-    #with open(f"{dir_path}/logs/imu2tcp_calibMat.txt", "w") as f:
-        #f.write("Translation:\n")
-        #f.write(str(t_Z))
-        #f.write("\n")
-        #f.write("Rotation:\n")
-        #f.write(str(r_Z))
+    with open(f"{dir_path}/logs/imu2tcp_calibMat.txt", "w") as f:
+        f.write("Translation:\n")
+        f.write(str(t_Z))
+        f.write("\n")
+        f.write("Rotation:\n")
+        f.write(str(r_Z))

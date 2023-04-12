@@ -7,7 +7,7 @@ import time
 
 class urControl:
 
-    base_target_pose = [-0.338, -0.096, 0.133, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
+    base_target_pose = [-0.338, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
     system_target_poses = []
 
     def __init__(self, ip, v, a):
@@ -23,7 +23,6 @@ class urControl:
         self.cspose = 0
 
         for i in range(3):
-            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]-0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
@@ -31,6 +30,7 @@ class urControl:
             self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]-0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
 
     def read_pose(self):
         # Read current pose of the TCP
