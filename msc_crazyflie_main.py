@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # Args for setting IP/port of AI-deck. Default settings are for when
     # AI-deck is in AP mode.
-    parser = argparse.ArgumentParser(description='Connect to AI-deck JPEG streamer example')
+    parser = argparse.ArgumentParser(description='Hand-Eye Calibration of the different combinations of IMU, Camera and Gripper')
     parser.add_argument("-n",  default="192.168.4.1", metavar="droneip", help="AI-deck IP")
     parser.add_argument("-r", default="172.31.1.200", metavar="robotip", help="Robot IP")
     parser.add_argument("-p", type=int, default='5000', metavar="port", help="AI-deck port")
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     parser.add_argument("-e", type=int, default='1', metavar="repetitions", help="Number of repetition")
     parser.add_argument("-v", type=float, default='0.3', metavar="velocity", help="Velocity of the UR")
     parser.add_argument("-a", type=float, default='0.1', metavar="acceleration", help="Acceleration of the UR")
-    parser.add_argument("-u", type=str, default='radio://0/100/2M/E7E7E7E701', metavar="uri", help="Radio-AP URI")
+    parser.add_argument("-u", default='radio://0/100/2M/E7E7E7E701', metavar="uri", help="Radio-AP URI")
+    parser.add_argument("-o", default=False, metavar="home pose", help="Set the current pose as the calibration object home pose")
     args = parser.parse_args()
 
     # Define robot-related parameters
@@ -37,10 +38,10 @@ if __name__ == "__main__":
     a = args.a
 
     # Create UR control object
-    ur = urc.urControl(rob_ip, v, a)
+    ur = urc.urControl(rob_ip, v, a, args.o) # set the last argument to true if you want to save the current tcp position as the home pose
 
     # Initialize the low-level drivers
-    #cflib.crtp.init_drivers()
+    cflib.crtp.init_drivers()
 
     # cfRadio, cfWiFi connection, and Path variables
     deck_port = args.p
