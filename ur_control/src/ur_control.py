@@ -7,10 +7,10 @@ import time
 
 class urControl:
 
-    base_target_pose = [-0.338, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
+    base_target_pose = [-0.370, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
     system_target_poses = []
 
-    def __init__(self, ip, v, a, set_pose):
+    def __init__(self, ip, v, a, set_pose=False):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
         self.rtde_r = rtder.RTDEReceiveInterface(ip)
