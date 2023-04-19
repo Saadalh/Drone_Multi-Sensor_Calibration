@@ -7,10 +7,11 @@ import time
 
 class urControl:
 
-    base_target_pose = [-0.370, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
+    rs_base_target_pose = [-0.370, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
+    cf_base_target_pose = [-0.370, -0.096, 0.145, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
     system_target_poses = []
 
-    def __init__(self, ip, v, a, set_pose=False):
+    def __init__(self, ip, v, a, device, set_pose=False):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
         self.rtde_r = rtder.RTDEReceiveInterface(ip)
@@ -21,6 +22,12 @@ class urControl:
         self.poses = []
         self.repeat_counter = 0
         self.cspose = 0
+
+        # Assign the home pose depending on the attached device
+        if device == 'cf':
+            self.base_target_pose = self.cf_base_target_pose
+        elif device == 'rs':
+            self.base_target_pose = self.rs_base_target_pose
 
         for i in range(3):
             self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])

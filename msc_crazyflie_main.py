@@ -38,7 +38,7 @@ if __name__ == "__main__":
     a = args.a
 
     # Create UR control object
-    ur = urc.urControl(rob_ip, v, a, args.o) # set the last argument to true if you want to save the current tcp position as the home pose
+    ur = urc.urControl(rob_ip, v, a, args.o, 'cf') # set the last argument to true if you want to save the current tcp position as the home pose
 
     # Initialize the low-level drivers
     cflib.crtp.init_drivers()

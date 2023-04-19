@@ -26,7 +26,7 @@ if __name__ == "__main__":
     a = args.a
 
     # Create UR control object
-    ur = urc.urControl(rob_ip, v, a)
+    ur = urc.urControl(rob_ip, v, a, 'rs')
     dir_path = os.path.realpath(os.path.dirname(__file__))
 
     # Initialize the realsense object
