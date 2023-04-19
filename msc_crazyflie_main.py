@@ -38,7 +38,7 @@ if __name__ == "__main__":
     a = args.a
 
     # Create UR control object
-    ur = urc.urControl(rob_ip, v, a, args.o, 'cf') # set the last argument to true if you want to save the current tcp position as the home pose
+    ur = urc.urControl(rob_ip, v, a, 'cf', args.o)
 
     # Initialize the low-level drivers
     cflib.crtp.init_drivers()
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     uri = uri_helper.uri_from_env(default=uri_add)
 
     # Connect to crazyflie and initialize the client socket
-    cfCam = cap.Camera(deck_ip, deck_port, f"{dir_path}/logs/captures")
+    cfCam = cap.Camera(deck_ip, deck_port, f"{dir_path}/logs/captures/cf")
     stream_start_thread = threading.Thread(target=cfCam.start_stream)
     stream_stop_thread = threading.Thread(target=cfCam.stop_stream)
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
                         ur.move_repeat() # mimics movement from the original repetition  
                     rob_pose = ur.read_pose() # reads the robot pose (list of 6)
                     time.sleep(0.5)
-                    cfCam.save_capture() # saves the current frame
+                    cfCam.save_capture(x, i+1) # saves the current frame
                     time.sleep(0.2)
                     ur_poses.append(rob_pose) # append the robot pose
                 else:
@@ -109,7 +109,7 @@ if __name__ == "__main__":
                         ur.move_repeat()
                     imu_pair.append(time.time()) # get the end imu_timestamp
                     time.sleep(0.5)
-                    cfCam.save_capture()
+                    cfCam.save_capture(x, i+1)
                     time.sleep(0.2)
                     rob_pose = ur.read_pose()
                     imu_timestamps.append(imu_pair) # append the imu pair
@@ -123,10 +123,10 @@ if __name__ == "__main__":
     # Average the robot poses
     avg_ur_poses = avg.poses_average(ur_poses, repetitions) # returns a list of {stations} averaged ur poses (tx,ty,tz,rx,ry,rz)
     # Save the average robot poses (m, radian)
-    with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
+    with open(f"{dir_path}/logs/cf_robot_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(avg_ur_poses) 
-        print("robot_poses.csv is created")
+        print("cf_robot_poses.csv is created")
 
     # Get the wanted IMU pose pairs from the log file
     picked_imu_posepairs = avg.imu_poses_picker(imu_timestamps, imu_dict_list)
@@ -135,10 +135,10 @@ if __name__ == "__main__":
     # Average the IMU poses
     avg_imu_poses = avg.poses_average(imu_poses, repetitions)
     # Save the average IMU poses (m, degree)
-    with open(f"{dir_path}/logs/imu_poses.csv", "w", newline="") as f:
+    with open(f"{dir_path}/logs/cf_imu_poses.csv", "w", newline="") as f:
         imuwriter = csv.writer(f)
         imuwriter.writerows(avg_imu_poses)
-        print("imu_poses.csv is created")
+        print("cf_imu_poses.csv is created")
     #print(avg_imu_poses)
 
     # Get the file names of the needed captures and  delete the rest
@@ -150,18 +150,18 @@ if __name__ == "__main__":
     for i in range(repetitions):
         # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetition
         if repetitions == 1:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', sorted_capture_files)
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/cf/', sorted_capture_files)
         else:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', sorted_capture_files[i])
+            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/cf/', sorted_capture_files[i])
         camMat, distCoef = charucoObj.intrinsicsCalibration()
         charucoObj.poseEstimation(camMat, distCoef, charuco_poses) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
     # Average the charuco poses
     avg_charuco_poses = avg.poses_average(charuco_poses, repetitions)
     # Save the ChAruCo poses (m, radian)
-    with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
+    with open(f"{dir_path}/logs/cf_charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(avg_charuco_poses)
-        print("charuco_poses.csv is created")
+        print("cf_charuco_poses.csv is created")
 
     # Split all logs into rotation and translation np.arrays
     # Split the robot poses
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     print(f"rotation cam2tcp, X, matrix: \n{r_X}")
 
     # Save the X hand-eye calibration matrix
-    with open(f"{dir_path}/logs/camera2tcp_calibMat.txt", "w") as f:
+    with open(f"{dir_path}/logs/cf_camera2tcp_calibMat.txt", "w") as f:
         f.write("Translation:\n")
         f.write(str(t_X))
         f.write("\n")
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     print(f"rotation imu2cam, Y, matrix: \n{r_Y}")
 
     # Save the Y hand-eye calibration matrix
-    with open(f"{dir_path}/logs/imu2camera_calibMat.txt", "w") as f:
+    with open(f"{dir_path}/logs/cf_imu2camera_calibMat.txt", "w") as f:
         f.write("Translation:\n")
         f.write(str(t_Y))
         f.write("\n")
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     print(f"rotation imu2tcp, Z, matrix: \n{r_Z}")
 
     # Save the Y hand-eye calibration matrix
-    with open(f"{dir_path}/logs/imu2tcp_calibMat.txt", "w") as f:
+    with open(f"{dir_path}/logs/cf_imu2tcp_calibMat.txt", "w") as f:
         f.write("Translation:\n")
         f.write(str(t_Z))
         f.write("\n")

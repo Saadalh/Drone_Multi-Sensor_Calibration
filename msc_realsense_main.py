@@ -87,7 +87,7 @@ if __name__ == "__main__":
     charuco_poses = [] # saves charuco poses of each repetition
     for i in range(repetitions):
         # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetitio
-        charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/rs', all_captures[i])
+        charucoObj = charuco.charuco(6, 4, 0.047, 0.037, f'{dir_path}/logs/rs', all_captures[i])
         camMat, distCoef = charucoObj.intrinsicsCalibration()
         charucoObj.poseEstimation(camMat, distCoef, charuco_poses) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
     # Average the charuco poses

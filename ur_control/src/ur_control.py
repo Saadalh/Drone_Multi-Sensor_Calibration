@@ -26,18 +26,26 @@ class urControl:
         # Assign the home pose depending on the attached device
         if device == 'cf':
             self.base_target_pose = self.cf_base_target_pose
+            for i in range(3):
+                self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]+0.158, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.151, self.base_target_pose[1], 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]-0.158, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]-0.211, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.346+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
         elif device == 'rs':
             self.base_target_pose = self.rs_base_target_pose
-
-        for i in range(3):
-            self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]-0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]-0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
-            self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+            for i in range(3):
+                self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]+0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]-0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0], self.base_target_pose[1]-0.211, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+                self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
 
         if set_pose is True:
             self.base_target_pose = self.rtde_r.getActualTCPPose()

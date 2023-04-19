@@ -104,8 +104,11 @@ class charuco:
 
         # Now that we've seen all of our images, perform the camera calibration
         # based on the set of points we've discovered
+        print(f"image size: {image_size}")
         calibration, cameraMatrix, distCoeffs, rvecs, tvecs = aruco.calibrateCameraCharuco(corners_all, ids_all, self.CHARUCO_BOARD, image_size, None, None)
-            
+        cameraMatrix = np.array([[616.315, 0, 326.519],[0, 616.533, 243.607],[0, 0, 1]])
+        distCoeffs = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+
         # Print matrix and distortion coefficient to the console
         print(cameraMatrix)
         print(distCoeffs)
@@ -118,6 +121,7 @@ class charuco:
         # Print to console our success
         print(f'Calibration Successful. Calibration values saved in: {self.dir_path}/../charuco_calibration_values.npz')
 
+        
         return cameraMatrix, distCoeffs
 
     def poseEstimation(self, cameraMatrix, distCoeffs, charuco_poses):
@@ -141,7 +145,7 @@ class charuco:
                     rvec = np.array([_rvec[0],_rvec[1],_rvec[2]])
                     tvec = np.array([_tvec[0],_tvec[1],_tvec[2]])
 #                    pose = np.array([_rvec[0],_rvec[1],_rvec[2], _tvec[0],_tvec[1],_tvec[2]])
-                    pose = [float(_rvec[0]), float(_rvec[1]), float(_rvec[2]), float(_tvec[0]), float(_tvec[1]), float(_tvec[2])]
+                    pose = [float(_tvec[0]), float(_tvec[1]), float(_tvec[2]), float(_rvec[0]), float(_rvec[1]), float(_rvec[2])]
                     
                     tvecs.append(tvec)
                     rvecs.append(rvec)

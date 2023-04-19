@@ -95,65 +95,48 @@ class Camera():
 
     def start_stream(self):
         print("Stream started.")
-        self.count = 0
         while(self.stream):
             # First get the info
             packetInfoRaw = self.rx_bytes(4)
-            #print(packetInfoRaw)
             [length, routing, function] = struct.unpack('<HBB', packetInfoRaw)
-            #print("Length is {}".format(length))
-            #print("Route is 0x{:02X}->0x{:02X}".format(routing & 0xF, routing >> 4))
-            #print("Function is 0x{:02X}".format(function))
 
             imgHeader = self.rx_bytes(length - 2)
-            #print(imgHeader)
-            #print("Length of data is {}".format(len(imgHeader)))
             [magic, width, height, depth, format, size] = struct.unpack('<BHHBBI', imgHeader)
 
             if magic == 0xBC:
-            #print("Magic is good")
-            #print("Resolution is {}x{} with depth of {} byte(s)".format(width, height, depth))
-            #print("Image format is {}".format(format))
-            #print("Image size is {} bytes".format(size))
-
             # Now we start rx the image, this will be split up in packages of some size
                 imgStream = bytearray()
                 
                 while len(imgStream) < size:
                     packetInfoRaw = self.rx_bytes(4)
                     [length, dst, src] = struct.unpack('<HBB', packetInfoRaw)
-                    #print("Chunk size is {} ({:02X}->{:02X})".format(length, src, dst))
                     chunk = self.rx_bytes(length - 2)
                     imgStream.extend(chunk)
                 
-                self.count = self.count + 1
-                print(self.count)
-                meanTimePerImage = (time.time()-self.start) / self.count
-                print("{}".format(meanTimePerImage))
-                print("{}".format(1/meanTimePerImage))
-
                 if format == 0:
                     self.bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
                     self.bayer_img.shape = (244, 324)
-                    #cv2.imshow('Raw', self.bayer_img)
-                    #cv2.imwrite(f"{self.dpath}/img_{self.count:06d}_{time.time()}.jpg", self.bayer_img)
-                    #cv2.waitKey(1)
+                    cv2.imshow('Raw', self.bayer_img)
+                    cv2.waitKey(1)
                 else:
                     with open("img.jpeg", "wb") as f:
                         f.write(imgStream)
                     nparr = np.frombuffer(imgStream, np.uint8)
                     decoded = cv2.imdecode(nparr,cv2.IMREAD_UNCHANGED)
                     cv2.imshow('JPEG', decoded)
-                    cv2.waitKey(1)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
+
         print("Stream Stopped.")
         cv2.destroyAllWindows()
 
     def stop_stream(self):
         self.stream = False
 
-    def save_capture(self):
-        cv2.imwrite(f"{self.dpath}/img_{self.count:06d}.jpg", self.bayer_img)
-        self.cap_list.append(f"{self.dpath}/img_{self.count:06d}.jpg")
+    def save_capture(self, x, i):
+        cv2.imwrite(f"{self.dpath}/img_{x}{i}.jpg", self.bayer_img)
+        self.cap_list.append(f"{self.dpath}/img_{x}{i}.jpg")
+        print(f"Captured frame #{x}{i}!")
 
     def get_caplist(self):
         return self.cap_list
