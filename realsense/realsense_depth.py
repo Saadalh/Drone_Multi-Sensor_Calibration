@@ -15,6 +15,7 @@ class DepthCamera:
         self.caplist = []
         self.color_image = None
         self.depth_image = None
+        self.streaming = True
         
         # Define pose-related variables
         self.initial_position = [0,0,0]
@@ -44,7 +45,7 @@ class DepthCamera:
 
     def stream(self):
         print("Streaming LIVE!")
-        while True:
+        while self.streaming:
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
@@ -110,7 +111,7 @@ class DepthCamera:
             self.caplist = []
         cv.imwrite(f"{self.dpath}/img_{x}{i+1}.jpg", self.color_image)
         self.caplist.append(f"{self.dpath}/img_{x}{i+1}.jpg")
-        print("Captured a frame!")
+        print(f"Captured frame #{x}{i+1}!")
 
     def update_position_orientation(self, acc_dt, gyro_dt):
         a = self.accel_last
@@ -141,8 +142,13 @@ class DepthCamera:
         self.initial_orientation = orientation
 
         return position, orientation
-                
-    def release(self):
+    
+    def get_caplist(self):
+        return self.caplist
+    
+    def release(self, sthread):
+        self.streaming = False
+        sthread.join()
         self.pipeline.stop()
 
 if __name__ == "__main__":

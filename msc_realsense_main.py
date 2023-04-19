@@ -11,9 +11,8 @@ import os
 
 if __name__ == "__main__":
 
-    # Args for setting IP/port of AI-deck. Default settings are for when
-    # AI-deck is in AP mode.
-    parser = argparse.ArgumentParser(description='Hand-Eye calibration of a ur gripper to a webcam example')
+    # Define program parse arguments.
+    parser = argparse.ArgumentParser(description='Hand-Eye calibration of a ur gripper to a realsense camera example')
     parser.add_argument("-r", default="172.31.1.200", metavar="robotip", help="Robot IP")
     parser.add_argument("-s", type=int, default='21', metavar="stations", help="Number of stations in each repetition")
     parser.add_argument("-e", type=int, default='1', metavar="repetitions", help="Number of repetition")
@@ -31,7 +30,7 @@ if __name__ == "__main__":
     dir_path = os.path.realpath(os.path.dirname(__file__))
 
     # Initialize the realsense object
-    rs = rd.DepthCamera(f"{dir_path}/logs/captures")
+    rs = rd.DepthCamera(f"{dir_path}/logs/captures/rs")
     rsstream_start_thread = threading.Thread(target=rs.stream)
     rsstream_start_thread.start()
 
@@ -72,35 +71,32 @@ if __name__ == "__main__":
                 time.sleep(0.2)
                 rob_pose = ur.read_pose()
                 ur_poses.append(rob_pose)
-        all_captures.append(rs.get)
+        all_captures.append(rs.get_caplist())
 
-    rs.release()
-    rsstream_start_thread.join()
+    rs.release(rsstream_start_thread)
+    #rsstream_start_thread.join()
 
     # Average the robot poses
     avg_ur_poses = avg.poses_average(ur_poses, repetitions) # returns a list of {stations} averaged ur poses (tx,ty,tz,rx,ry,rz)
     # Save the average robot poses (m, radian)
-    with open(f"{dir_path}/logs/robot_poses.csv", "w", newline="") as f:
+    with open(f"{dir_path}/logs/rs_robot_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(avg_ur_poses) 
-        print("robot_poses.csv is created")
+        print("rs_robot_poses.csv is created")
 
     charuco_poses = [] # saves charuco poses of each repetition
     for i in range(repetitions):
-        # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetition
-        if repetitions == 1:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', captures)
-        else:
-            charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/', captures[i])
+        # Create ChAruCo board object, calibrate the camera intrinsics, and estimate ChAruCo poses for each repetitio
+        charucoObj = charuco.charuco(5, 3, 0.055, 0.043, f'{dir_path}/logs/rs', all_captures[i])
         camMat, distCoef = charucoObj.intrinsicsCalibration()
         charucoObj.poseEstimation(camMat, distCoef, charuco_poses) # Outputs a 3x1 translation and a 3x1 rotation (Rodrigues) of the calib object wrt the camera CS
     # Average the charuco poses
     avg_charuco_poses = avg.poses_average(charuco_poses, repetitions)
     # Save the ChAruCo poses (m, radian)
-    with open(f"{dir_path}/logs/charuco_poses.csv", "w", newline="") as f:
+    with open(f"{dir_path}/logs/rs_charuco_poses.csv", "w", newline="") as f:
         posewriter = csv.writer(f)
         posewriter.writerows(avg_charuco_poses)
-        print("charuco_poses.csv is created")
+        print("rs_charuco_poses.csv is created")
 
     # Split all logs into rotation and translation np.arrays
     # Split the robot poses
@@ -115,7 +111,7 @@ if __name__ == "__main__":
     print(f"rotation cam2tcp, X, matrix: \n{r_X}")
 
     # Save the X hand-eye calibration matrix
-    with open(f"{dir_path}/logs/camera2tcp_calibMat.txt", "w") as f:
+    with open(f"{dir_path}/logs/rs_camera2tcp_calibMat.txt", "w") as f:
         f.write("Translation:\n")
         f.write(str(t_X))
         f.write("\n")
