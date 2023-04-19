@@ -10,7 +10,7 @@ class urControl:
     base_target_pose = [-0.338, -0.096, 0.025, 0, -3.14, 0] # the home pose, can be changed depending on the current setup
     system_target_poses = []
 
-    def __init__(self, ip, v, a):
+    def __init__(self, ip, v, a, set_pose):
         # Creating controller and receiver objects 
         self.rtde_c = rtdec.RTDEControlInterface(ip)
         self.rtde_r = rtder.RTDEReceiveInterface(ip)
@@ -31,6 +31,9 @@ class urControl:
             self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]-0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]+0.151, self.base_target_pose[1], 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
             self.system_target_poses.append([self.base_target_pose[0]+0.158, self.base_target_pose[1]+0.158, 0.446+(0.002*i), self.base_target_pose[3], self.base_target_pose[4], self.base_target_pose[5]])
+
+        if set_pose is True:
+            self.base_target_pose = self.rtde_r.getActualTCPPose()
 
     def read_pose(self):
         # Read current pose of the TCP
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     v = 0.12
     a = 0.1
 
-    urc = urControl(ip, v, a)
+    urc = urControl(ip, v, a, False)
     #print(urc.read_pose())
     urc.move_home()
     #urc.move_target()
