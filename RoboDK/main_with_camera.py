@@ -3,7 +3,7 @@ from robodk import robomath
 import time
 import os  
 import random
-import charuco_intrinsics_calibration as calib
+import charuco_calibration as calib
 import threading
 import numpy as np
 import cv2 as cv

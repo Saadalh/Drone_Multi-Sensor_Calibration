@@ -1,12 +1,9 @@
 from scipy.spatial.transform import Rotation as R
-import charuco_intrinsics_calibration as calib
 from robodk import robomath
 import numpy as np
 import cv2 as cv
-import threading
 import robolink   
 import random
-import scipy
 import time
 import math
 import os  
